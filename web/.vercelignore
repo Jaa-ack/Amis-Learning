@@ -1,0 +1,13 @@
+# 忽略開發和不必要的文件
+node_modules
+.env.local
+.env.*.local
+.git
+.gitignore
+README.md
+npm-debug.log
+*.test.ts
+*.test.tsx
+__tests__
+.next/cache
+scripts/clean-import.ts
