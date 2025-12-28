@@ -18,11 +18,22 @@ export default function Study() {
   const [current, setCurrent] = useState(0);
   const [studiedCount, setStudiedCount] = useState(0);
   const [sessionId, setSessionId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
   // 載入方言列表
   useEffect(() => {
+    setLoading(true);
     api.get('/dashboard/dialects', { params: { userId: 'demo-user' } })
-      .then(res => setDialects(res.data.dialects || []));
+      .then(res => {
+        setDialects(res.data.dialects || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('載入方言失敗:', err);
+        setError('無法載入方言列表。請確認資料庫連接正常。');
+        setLoading(false);
+      });
   }, []);
 
   // 選擇方言後載入字卡
@@ -79,6 +90,48 @@ export default function Study() {
         <p style={{ color: '#666', marginBottom: 20 }}>
           選擇一個阿美語方言開始學習。系統會根據 SM-2 間隔重複演算法為您推薦最適合複習的單字。
         </p>
+        
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+            載入方言列表中...
+          </div>
+        )}
+
+        {error && (
+          <div style={{ 
+            padding: 16, 
+            background: '#fee2e2', 
+            borderRadius: 12, 
+            color: '#dc2626',
+            marginBottom: 20 
+          }}>
+            <strong>錯誤：</strong> {error}
+            <div style={{ fontSize: 14, marginTop: 8 }}>
+              請確認：
+              <ol style={{ marginTop: 8, marginLeft: 20 }}>
+                <li>Vercel 環境變數 DATABASE_URL 已設定</li>
+                <li>資料庫連接正常</li>
+                <li>已執行資料匯入</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && dialects.length === 0 && (
+          <div style={{ 
+            padding: 16, 
+            background: '#fef9c3', 
+            borderRadius: 12, 
+            color: '#854d0e',
+            marginBottom: 20 
+          }}>
+            <strong>提示：</strong> 尚未匯入任何方言資料。
+            <div style={{ fontSize: 14, marginTop: 8 }}>
+              請在本地執行 <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>npm run import</code> 匯入詞彙資料。
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'grid', gap: 12 }}>
           {dialects.map(d => (
             <button
