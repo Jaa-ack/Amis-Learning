@@ -31,24 +31,19 @@ function buildPoolingUrlFromDirect(url: string): string | null {
 }
 
 /**
- * Hardcoded fallback for Vercel environment when DATABASE_URL is not set
- * Uses known project ref: komwtkwhfvhuswfwvnwu
+ * Fallback connection builder from individual env vars
+ * Used when DATABASE_URL is not available (common in Vercel)
  */
-function getVercelFallbackUrl(): string | null {
-  // Only in Vercel production
-  if (process.env.VERCEL !== '1') return null;
-  
+function getServerlessFallbackUrl(): string | null {
   const password = process.env.SUPABASE_PASSWORD;
   const ref = process.env.SUPABASE_REF || 'komwtkwhfvhuswfwvnwu';
   const region = process.env.SUPABASE_REGION || 'ap-northeast-1';
   
-  // If we have a password, use it for pooling connection
-  if (password) {
-    const pooledUser = `postgres.${ref}`;
-    return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`;
-  }
+  // Only build fallback if we have a password
+  if (!password) return null;
   
-  return null;
+  const pooledUser = `postgres.${ref}`;
+  return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`;
 }
 
 let effectiveUrl = process.env.DATABASE_URL;
@@ -61,9 +56,10 @@ if (effectiveUrl?.includes(':5432')) {
   }
 }
 
-// On Vercel, if DATABASE_URL is still not set or looks wrong, try fallback
-if ((process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') && !effectiveUrl) {
-  const fallback = getVercelFallbackUrl();
+// If DATABASE_URL is missing or invalid, try serverless fallback
+// This handles Vercel deployments where env var references fail
+if (!effectiveUrl || !effectiveUrl.includes('postgresql://')) {
+  const fallback = getServerlessFallbackUrl();
   if (fallback) {
     effectiveUrl = fallback;
   }
