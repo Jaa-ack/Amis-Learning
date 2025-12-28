@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
+/**
+ * Converts Direct Connection (5432) to Connection Pooling (6543)
+ * Extracts ref from db.{ref}.supabase.co and rebuilds with pooler host
+ */
 function buildPoolingUrlFromDirect(url: string): string | null {
   try {
     const u = new URL(url);
@@ -26,11 +30,44 @@ function buildPoolingUrlFromDirect(url: string): string | null {
   }
 }
 
-const rawUrl = process.env.DATABASE_URL;
-const shouldForcePooling = process.env.VERCEL === '1' || process.env.FORCE_SUPABASE_POOLING === '1';
+/**
+ * Hardcoded fallback for Vercel environment when DATABASE_URL is not set
+ * Uses known project ref: komwtkwhfvhuswfwvnwu
+ */
+function getVercelFallbackUrl(): string | null {
+  // Only in Vercel production
+  if (process.env.VERCEL !== '1') return null;
+  
+  const password = process.env.SUPABASE_PASSWORD;
+  const ref = process.env.SUPABASE_REF || 'komwtkwhfvhuswfwvnwu';
+  const region = process.env.SUPABASE_REGION || 'ap-northeast-1';
+  
+  // If we have a password, use it for pooling connection
+  if (password) {
+    const pooledUser = `postgres.${ref}`;
+    return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`;
+  }
+  
+  return null;
+}
 
-const effectiveUrl =
-  shouldForcePooling && rawUrl ? (buildPoolingUrlFromDirect(rawUrl) || rawUrl) : rawUrl;
+let effectiveUrl = process.env.DATABASE_URL;
+
+// If DATABASE_URL is a direct connection (5432), convert to pooling (6543)
+if (effectiveUrl?.includes(':5432')) {
+  const pooled = buildPoolingUrlFromDirect(effectiveUrl);
+  if (pooled) {
+    effectiveUrl = pooled;
+  }
+}
+
+// On Vercel, if DATABASE_URL is still not set or looks wrong, try fallback
+if ((process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') && !effectiveUrl) {
+  const fallback = getVercelFallbackUrl();
+  if (fallback) {
+    effectiveUrl = fallback;
+  }
+}
 
 declare global {
   // eslint-disable-next-line no-var

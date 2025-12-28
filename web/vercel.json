@@ -1,9 +1,5 @@
 {
   "buildCommand": "prisma generate && npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "DIRECT_URL": "@direct_url"
-  }
+  "framework": "nextjs"
 }
