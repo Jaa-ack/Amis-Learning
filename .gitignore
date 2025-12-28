@@ -1,0 +1,47 @@
+# .gitignore - 防止敏感資料上傳
+
+# Environment variables (重要！包含資料庫密碼)
+.env
+.env.local
+.env*.local
+web/.env
+web/.env.local
+server/.env
+
+# Dependencies
+node_modules/
+web/node_modules/
+server/node_modules/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+import.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma
+prisma/migrations/
+web/prisma/migrations/
+server/prisma/migrations/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.swp
+*.swo
+*~

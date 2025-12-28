@@ -1,0 +1,148 @@
+// Prisma Schema for Amis Language Learning Platform (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CardStatus {
+  NEW
+  LEARNING
+  REVIEWED
+}
+
+enum ReviewMode {
+  CHOICE
+  SPELL
+  MIXED
+}
+
+enum ReviewSessionType {
+  NORMAL
+  POST_TEST
+}
+
+model User {
+  id          String          @id @default(cuid())
+  email       String          @unique
+  name        String?
+  createdAt   DateTime        @default(now())
+  preferences UserPreference?
+  stats       UserCardStat[]
+  reviews     Review[]
+  sessions    ReviewSession[]
+}
+
+model UserPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  dailyNewTarget   Int      @default(10) // 1-50
+  reviewRatio      Int      @default(50) // 10-80
+  dialectFilter    String[] // array of dialect codes or ids
+  spellingTolerance Int     @default(85) // 70-100
+}
+
+model Dialect {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  region    String?
+  createdAt DateTime @default(now())
+  flashcards Flashcard[]
+  sentences  Sentence[]
+}
+
+model Flashcard {
+  id         String     @id @default(cuid())
+  dialectId  String
+  dialect    Dialect    @relation(fields: [dialectId], references: [id])
+  lemma      String
+  phonetic   String?
+  meaning    String?
+  status     CardStatus @default(NEW)
+  tags       String[]
+  createdBy  String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  stats      UserCardStat[]
+  reviews    Review[]
+  links      SentenceWordLink[]
+
+  @@index([lemma])
+  @@index([dialectId, status])
+}
+
+model Sentence {
+  id         String   @id @default(cuid())
+  dialectId  String
+  dialect    Dialect  @relation(fields: [dialectId], references: [id])
+  text       String
+  translation String?
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  links      SentenceWordLink[]
+
+  @@index([dialectId])
+}
+
+model SentenceWordLink {
+  id          String   @id @default(cuid())
+  sentenceId  String
+  sentence    Sentence @relation(fields: [sentenceId], references: [id])
+  flashcardId String
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+  startIndex  Int
+  endIndex    Int
+
+  @@unique([sentenceId, flashcardId, startIndex, endIndex])
+}
+
+model UserCardStat {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  flashcardId    String
+  flashcard      Flashcard  @relation(fields: [flashcardId], references: [id])
+  ef             Float      @default(2.5) // SM-2 EF
+  intervalDays   Int        @default(0)
+  repetitions    Int        @default(0)
+  nextReviewAt   DateTime?
+  lastReviewAt   DateTime?
+  currentPriority Int       @default(4) // 1-4
+  status         CardStatus @default(NEW)
+  wrongCount     Int        @default(0)
+
+  @@index([userId, currentPriority])
+  @@index([nextReviewAt])
+}
+
+model ReviewSession {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  type      ReviewSessionType @default(NORMAL)
+  createdAt DateTime          @default(now())
+  reviews   Review[]
+}
+
+model Review {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  flashcardId  String
+  flashcard    Flashcard    @relation(fields: [flashcardId], references: [id])
+  sessionId    String?
+  session      ReviewSession? @relation(fields: [sessionId], references: [id])
+  mode         ReviewMode
+  score        Int          // 1-4 per spec
+  similarity   Float?       // for SPELL mode (0-100)
+  quality      Int?         // mapped SM-2 quality (e.g., 2-5)
+  createdAt    DateTime     @default(now())
+
+  @@index([userId, flashcardId])
+}
