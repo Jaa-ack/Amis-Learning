@@ -9,5 +9,12 @@ export default async function handler(_req: NextApiRequest, res: NextApiResponse
     GROUP BY d.id, d.name
     ORDER BY d.name ASC;
   `;
-  res.json({ data });
+  // Postgres COUNT() returns bigint; Next.js cannot serialize BigInt directly.
+  const sanitized = data.map((row) => ({
+    dialect_id: Number(row.dialect_id ?? 0),
+    name: String(row.name ?? ''),
+    cards: Number(row.cards ?? 0),
+  }));
+
+  res.json({ data: sanitized });
 }
