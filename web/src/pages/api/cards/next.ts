@@ -12,73 +12,58 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let items: any[];
 
+  // 優化版查詢：使用 LEFT JOIN 替代 EXISTS，減少子查詢掃描
   if (dialectId) {
     items = await prisma.$queryRaw<any[]>`
-      WITH stats AS (
-        SELECT ucs.*, f.dialect_id,
-               EXISTS (
-                 SELECT 1 FROM reviews r
-                 JOIN review_session s ON s.id = r.session_id
-                 WHERE r.flashcard_id = ucs.flashcard_id
-                   AND s.type = 'POST_TEST'
-                   AND r.score <= 2
-               ) AS failed_post_test
-        FROM user_card_stats ucs
-        JOIN flashcards f ON f.id = ucs.flashcard_id
-        WHERE f.dialect_id = ${dialectId}
-      ), ranked AS (
-        SELECT
-          stats.flashcard_id,
-          stats.ef,
-          stats.repetitions,
-          stats.next_review_at,
-          CASE
-            WHEN stats.failed_post_test THEN 1
-            WHEN stats.ef <= 1.6 THEN 2
-            WHEN stats.next_review_at IS NOT NULL AND now() > stats.next_review_at THEN 3
-            WHEN stats.repetitions < 2 THEN 4
-            ELSE 4
-          END AS priority
-        FROM stats
+      WITH failed_tests AS (
+        SELECT DISTINCT r.flashcard_id
+        FROM reviews r
+        INNER JOIN review_session s ON s.id = r.session_id
+        WHERE s.type = 'POST_TEST' AND r.score <= 2
       )
-      SELECT f.*, ranked.priority
-      FROM ranked
-      JOIN flashcards f ON f.id = ranked.flashcard_id
-      ORDER BY priority ASC, next_review_at ASC NULLS LAST, ef ASC
+      SELECT 
+        f.*,
+        CASE
+          WHEN ft.flashcard_id IS NOT NULL THEN 1
+          WHEN ucs.ef <= 1.6 THEN 2
+          WHEN ucs.next_review_at IS NOT NULL AND now() > ucs.next_review_at THEN 3
+          WHEN ucs.repetitions < 2 THEN 4
+          ELSE 4
+        END AS priority
+      FROM flashcards f
+      LEFT JOIN user_card_stats ucs ON ucs.flashcard_id = f.id
+      LEFT JOIN failed_tests ft ON ft.flashcard_id = f.id
+      WHERE f.dialect_id = ${dialectId}
+      ORDER BY 
+        priority ASC, 
+        ucs.next_review_at ASC NULLS LAST, 
+        ucs.ef ASC
       LIMIT ${limit};
     `;
   } else {
     items = await prisma.$queryRaw<any[]>`
-      WITH stats AS (
-        SELECT ucs.*, f.dialect_id,
-               EXISTS (
-                 SELECT 1 FROM reviews r
-                 JOIN review_session s ON s.id = r.session_id
-                 WHERE r.flashcard_id = ucs.flashcard_id
-                   AND s.type = 'POST_TEST'
-                   AND r.score <= 2
-               ) AS failed_post_test
-        FROM user_card_stats ucs
-        JOIN flashcards f ON f.id = ucs.flashcard_id
-      ), ranked AS (
-        SELECT
-          stats.flashcard_id,
-          stats.ef,
-          stats.repetitions,
-          stats.next_review_at,
-          CASE
-            WHEN stats.failed_post_test THEN 1
-            WHEN stats.ef <= 1.6 THEN 2
-            WHEN stats.next_review_at IS NOT NULL AND now() > stats.next_review_at THEN 3
-            WHEN stats.repetitions < 2 THEN 4
-            ELSE 4
-          END AS priority
-        FROM stats
+      WITH failed_tests AS (
+        SELECT DISTINCT r.flashcard_id
+        FROM reviews r
+        INNER JOIN review_session s ON s.id = r.session_id
+        WHERE s.type = 'POST_TEST' AND r.score <= 2
       )
-      SELECT f.*, ranked.priority
-      FROM ranked
-      JOIN flashcards f ON f.id = ranked.flashcard_id
-      ORDER BY priority ASC, next_review_at ASC NULLS LAST, ef ASC
+      SELECT 
+        f.*,
+        CASE
+          WHEN ft.flashcard_id IS NOT NULL THEN 1
+          WHEN ucs.ef <= 1.6 THEN 2
+          WHEN ucs.next_review_at IS NOT NULL AND now() > ucs.next_review_at THEN 3
+          WHEN ucs.repetitions < 2 THEN 4
+          ELSE 4
+        END AS priority
+      FROM flashcards f
+      LEFT JOIN user_card_stats ucs ON ucs.flashcard_id = f.id
+      LEFT JOIN failed_tests ft ON ft.flashcard_id = f.id
+      ORDER BY 
+        priority ASC, 
+        ucs.next_review_at ASC NULLS LAST, 
+        ucs.ef ASC
       LIMIT ${limit};
     `;
   }
