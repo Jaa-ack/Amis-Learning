@@ -59,9 +59,11 @@ export default function Test() {
     setSubmitting(true);
     
     try {
-      const similarity = similarityPercent(input, item.lemma);
-      const isCorrect = similarity >= 85; // 85% 以上視為正確
-      const score = similarity >= 100 ? 4 : similarity >= 85 ? 3 : similarity >= 70 ? 2 : 1;
+      const na = normalize(input);
+      const nb = normalize(item.lemma);
+      const similarity = similarityPercent(na, nb);
+      const isCorrect = na === nb; // 必須 100% 相同才視為正確
+      const score = isCorrect ? 4 : similarity >= 85 ? 3 : similarity >= 70 ? 2 : 1;
       
       // 提交測驗結果（標記為 POST_TEST）
       await api.post('/reviews', { 
@@ -286,13 +288,11 @@ export default function Test() {
 }
 
 function similarityPercent(a: string, b: string) {
-  const na = normalize(a);
-  const nb = normalize(b);
-  if (!na || !nb) return 0;
-  const maxLen = Math.max(na.length, nb.length);
+  if (!a || !b) return 0;
+  const maxLen = Math.max(a.length, b.length);
   let same = 0;
-  for (let i = 0; i < Math.min(na.length, nb.length); i++) {
-    if (na[i] === nb[i]) same++;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] === b[i]) same++;
   }
   return Math.round((same / maxLen) * 100);
 }
