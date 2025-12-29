@@ -11,7 +11,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_session_score
 
 -- 2. ReviewSession 表的類型索引（用於 POST_TEST 篩選）
 CREATE INDEX IF NOT EXISTS idx_review_session_type 
-  ON review_session (type, created_at);
+  ON review_session (type, "createdAt");
 
 -- 3. UserCardStat 的複合索引（用於 priority 計算）
 CREATE INDEX IF NOT EXISTS idx_user_card_stats_composite 
