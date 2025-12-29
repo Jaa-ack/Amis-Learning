@@ -6,11 +6,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const dialectId = req.query.dialectId as string | undefined;
   if (!q) return res.json({ items: [] });
 
-  const whereDialect = dialectId ? prisma.$queryRaw`WHERE dialect_id = ${dialectId}` : prisma.$queryRaw``;
   const items = await prisma.$queryRaw<any[]>`
     SELECT id, lemma, meaning, dialect_id, similarity(lemma, ${q}) AS sim
     FROM flashcards
-    ${whereDialect}
+    ${dialectId ? prisma.$queryRaw`WHERE dialect_id = ${dialectId}` : prisma.$queryRaw`WHERE 1=1`}
     ORDER BY sim DESC
     LIMIT 50;
   `;

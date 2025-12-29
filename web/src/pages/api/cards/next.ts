@@ -5,8 +5,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const dialectId = req.query.dialectId as string | undefined;
   const limit = Number((req.query.limit as string) ?? '20');
 
-  const whereDialect = dialectId ? prisma.$queryRaw`AND f.dialect_id = ${dialectId}` : prisma.$queryRaw``;
-
   const items = await prisma.$queryRaw<any[]>`
     WITH stats AS (
       SELECT ucs.*, f.dialect_id,
@@ -19,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
              ) AS failed_post_test
       FROM user_card_stats ucs
       JOIN flashcards f ON f.id = ucs.flashcard_id
-        ${whereDialect}
+      WHERE ${dialectId ? prisma.$queryRaw`f.dialect_id = ${dialectId}` : prisma.$queryRaw`TRUE`}
     ), ranked AS (
       SELECT
         stats.flashcard_id,

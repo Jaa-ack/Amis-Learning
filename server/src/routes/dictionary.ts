@@ -11,7 +11,7 @@ export async function dictionaryRoutes(app: FastifyInstance) {
       SELECT id, lemma, meaning, dialect_id,
              similarity(lemma, ${q}) AS sim
       FROM flashcards
-      ${dialectId ? prisma.$queryRaw`WHERE dialect_id = ${dialectId}` : prisma.$queryRaw``}
+      ${dialectId ? prisma.$queryRaw`WHERE dialect_id = ${dialectId}` : prisma.$queryRaw`WHERE 1=1`}
       ORDER BY sim DESC
       LIMIT 50;
     `;

@@ -21,7 +21,7 @@ export async function studyRoutes(app: FastifyInstance) {
                ) AS failed_post_test
         FROM user_card_stats ucs
         JOIN flashcards f ON f.id = ucs.flashcard_id
-          ${dialectId ? prisma.$queryRaw`WHERE f.dialect_id = ${dialectId}` : prisma.$queryRaw``}
+        WHERE ${dialectId ? prisma.$queryRaw`f.dialect_id = ${dialectId}` : prisma.$queryRaw`TRUE`}
       ), ranked AS (
         SELECT
           stats.flashcard_id,
