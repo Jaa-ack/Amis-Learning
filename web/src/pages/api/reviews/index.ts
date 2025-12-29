@@ -14,6 +14,17 @@ function mapScoreToQuality(mode: string, score: number, similarity?: number) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // 禁用快取 + 支援 OPTIONS 預檢，避免 405
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') return res.status(405).end();
   const { flashcardId, mode, score, similarity, isPostTest, sessionId } = req.body;
 
