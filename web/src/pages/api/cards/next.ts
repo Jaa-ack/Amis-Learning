@@ -2,6 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // 禁用快取避免 304 導致前端拿不到資料
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const dialectId = req.query.dialectId as string | undefined;
   const limit = Number((req.query.limit as string) ?? '20');
 
@@ -76,6 +81,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ORDER BY priority ASC, next_review_at ASC NULLS LAST, ef ASC
       LIMIT ${limit};
     `;
+  }
+
+  // 若沒有任何複習紀錄，回退為「最近建立的單字」以避免空畫面
+  if (!items || items.length === 0) {
+    items = await prisma.flashcard.findMany({
+      where: dialectId ? { dialectId } : {},
+      orderBy: [{ createdAt: 'desc' }],
+      take: limit,
+    });
   }
 
   res.json({ items });

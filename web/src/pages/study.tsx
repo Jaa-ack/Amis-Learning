@@ -26,13 +26,19 @@ export default function Study() {
     setLoading(true);
     api.get('/dashboard/dialects')
       .then(res => {
-        setDialects(res.data.dialects || []);
-        // 從 localStorage 恢復選擇
+        const list: Dialect[] = res.data.dialects || [];
+        setDialects(list);
+
+        // 從 localStorage 或第一個方言自動選擇
         const saved = localStorage.getItem('selectedDialectId');
-        if (saved && res.data.dialects?.find((d: Dialect) => d.id === saved)) {
-          loadCards(saved);
+        const fallback = list.length > 0 ? list[0].id : null;
+        const toUse = saved && list.find((d: Dialect) => d.id === saved) ? saved : fallback;
+
+        if (toUse) {
+          loadCards(toUse);
+        } else {
+          setLoading(false);
         }
-        setLoading(false);
       })
       .catch(err => {
         console.error('載入方言失敗:', err);
@@ -43,6 +49,7 @@ export default function Study() {
 
   // 選擇方言後載入字卡
   const loadCards = async (dialectId: string) => {
+    setLoading(true);
     setSelectedDialect(dialectId);
     const res = await api.get('/cards/next', { 
       params: { dialectId, limit: 10 } 
@@ -52,6 +59,7 @@ export default function Study() {
     setStudiedCount(0);
     // 創建學習會話 ID
     setSessionId(`study-${dialectId}-${Date.now()}`);
+    setLoading(false);
   };
 
   const item = items[current];
@@ -177,7 +185,11 @@ export default function Study() {
         </div>
       </div>
       
-      {item ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          載入中...
+        </div>
+      ) : item ? (
         <>
           <Card 
             front={item.lemma} 
@@ -232,7 +244,7 @@ export default function Study() {
         </>
       ) : (
         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-          載入中...
+          目前沒有可學習的單字，請先在 CMS 新增資料。
         </div>
       )}
     </main>

@@ -23,6 +23,7 @@ export default function Test() {
   const [results, setResults] = useState<TestResult['items']>([]);
   const [sessionId, setSessionId] = useState<string>('');
   const [isFinished, setIsFinished] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (router.isReady) {
@@ -31,6 +32,7 @@ export default function Test() {
   }, [router.isReady]);
 
   const loadTestItems = async () => {
+    setLoading(true);
     // 根據演算法獲取需要測驗的單字
     // 優先順序：1) 最近學習的 2) 需要複習的 3) 容易忘記的
     const params: any = { limit: 10 };
@@ -46,6 +48,7 @@ export default function Test() {
     const res = await api.get('/cards/next', { params });
     setItems(res.data.items || []);
     setSessionId(`test-${params.dialectId || 'all'}-${Date.now()}`);
+    setLoading(false);
   };
 
   const item = items[current];
@@ -260,9 +263,13 @@ export default function Test() {
             提交答案
           </button>
         </>
-      ) : (
+      ) : loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
           載入測驗題目...
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          目前沒有可測驗的單字，請先在學習模式學習或在 CMS 新增資料。
         </div>
       )}
     </main>

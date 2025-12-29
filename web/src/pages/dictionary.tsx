@@ -32,13 +32,25 @@ export default function Dictionary() {
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editLemma, setEditLemma] = useState('');
+  const [editMeaning, setEditMeaning] = useState('');
+  const [editDialectId, setEditDialectId] = useState('');
+  const [editTags, setEditTags] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
   // 載入所有語別
   useEffect(() => {
     const loadDialects = async () => {
       try {
         const res = await api.get('/dashboard/dialects');
-        setDialects(res.data.data || []);
+        const list: Dialect[] = res.data.dialects || [];
+        setDialects(list);
+
+        const saved = localStorage.getItem('selectedDialectId');
+        if (saved && list.find(d => d.id === saved)) {
+          setSelectedDialect(saved);
+        }
       } catch (error) {
         console.error('Failed to load dialects:', error);
       }
@@ -54,7 +66,17 @@ export default function Dictionary() {
         const res = await api.get('/dictionary/all', {
           params: { dialectId: selectedDialect === 'all' ? undefined : selectedDialect }
         });
-        setItems(res.data.items || []);
+        const list = res.data.items || [];
+        setItems(list);
+
+        // 如果目前選中的卡在篩選後不存在，重置選擇
+        if (selectedCard) {
+          const refreshed = list.find((item: Flashcard) => item.id === selectedCard.id);
+          if (!refreshed) {
+            setSelectedCard(null);
+            setSentences([]);
+          }
+        }
       } catch (error) {
         console.error('Failed to load flashcards:', error);
         setItems([]);
@@ -78,7 +100,65 @@ export default function Dictionary() {
 
   const handleCardClick = (card: Flashcard) => {
     setSelectedCard(card);
+    setEditLemma(card.lemma || '');
+    setEditMeaning(card.meaning || '');
+    setEditDialectId(card.dialect_id || '');
+    setEditTags(card.tags?.join(',') || '');
     loadSentences(card.id);
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedCard) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const tagsArray = editTags ? editTags.split(',').map(t => t.trim()).filter(Boolean) : [];
+      const res = await api.patch('/dictionary/card', {
+        id: selectedCard.id,
+        dialectId: editDialectId || null,
+        lemma: editLemma,
+        meaning: editMeaning,
+        tags: tagsArray,
+      });
+      const updated: Flashcard = {
+        ...selectedCard,
+        ...res.data.flashcard,
+        dialect_id: res.data.flashcard.dialectId,
+      };
+      setSelectedCard(updated);
+      setItems(prev => prev.map(item => item.id === updated.id ? {
+        ...item,
+        lemma: updated.lemma,
+        meaning: updated.meaning,
+        tags: updated.tags,
+        dialect_id: updated.dialect_id,
+      } : item));
+      setMessage('✅ 已更新單字');
+    } catch (error: any) {
+      setMessage(`❌ 更新失敗：${error.response?.data?.error || error.message}`);
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCard) return;
+    if (!confirm('確定要刪除這個單字嗎？此動作無法復原。')) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      await api.delete('/dictionary/card', { data: { id: selectedCard.id } });
+      setItems(prev => prev.filter(item => item.id !== selectedCard.id));
+      setSelectedCard(null);
+      setSentences([]);
+      setMessage('✅ 已刪除單字');
+    } catch (error: any) {
+      setMessage(`❌ 刪除失敗：${error.response?.data?.error || error.message}`);
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const filteredItems = searchQuery
@@ -98,12 +178,32 @@ export default function Dictionary() {
     <main style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
       <h2>阿美語辭典</h2>
 
+      {message && (
+        <div style={{
+          marginTop: 8,
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: 8,
+          background: message.startsWith('✅') ? '#ecfdf3' : '#fef2f2',
+          color: message.startsWith('✅') ? '#166534' : '#991b1b',
+          border: `1px solid ${message.startsWith('✅') ? '#bbf7d0' : '#fecdd3'}`,
+        }}>
+          {message}
+        </div>
+      )}
+
       {/* 語別選擇 */}
       <div style={{ marginBottom: 16 }}>
         <label style={{ marginRight: 8, fontWeight: 'bold' }}>選擇語別：</label>
         <select
           value={selectedDialect}
-          onChange={e => setSelectedDialect(e.target.value)}
+          onChange={e => {
+            const value = e.target.value;
+            setSelectedDialect(value);
+            if (value !== 'all') {
+              localStorage.setItem('selectedDialectId', value);
+            }
+          }}
           style={{ padding: 8, fontSize: 16, borderRadius: 4, border: '1px solid #ccc' }}
         >
           <option value="all">全部語別</option>
@@ -200,7 +300,7 @@ export default function Dictionary() {
 
               <div style={{ marginBottom: 12 }}>
                 <strong>語別：</strong>
-                <div style={{ marginTop: 4 }}>{getDialectName(selectedCard.dialect_id)}</div>
+                <div style={{ marginTop: 4 }}>{selectedCard.dialect_name || getDialectName(selectedCard.dialect_id)}</div>
               </div>
 
               {selectedCard.tags && selectedCard.tags.length > 0 && (
@@ -242,6 +342,80 @@ export default function Dictionary() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div style={{ marginTop: 24, borderTop: '1px solid #eee', paddingTop: 16 }}>
+                <strong>調整 / 刪除：</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>語別</label>
+                    <select
+                      value={editDialectId}
+                      onChange={e => setEditDialectId(e.target.value)}
+                      style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                    >
+                      <option value="">未分類</option>
+                      {dialects.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>單字</label>
+                    <input
+                      value={editLemma}
+                      onChange={e => setEditLemma(e.target.value)}
+                      style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>中文意思</label>
+                    <input
+                      value={editMeaning}
+                      onChange={e => setEditMeaning(e.target.value)}
+                      style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>標籤（逗號分隔）</label>
+                    <input
+                      value={editTags}
+                      onChange={e => setEditTags(e.target.value)}
+                      style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                  <button
+                    onClick={handleUpdate}
+                    disabled={saving}
+                    style={{
+                      padding: '10px 16px',
+                      background: '#1d4ed8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {saving ? '儲存中...' : '儲存調整'}
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={saving}
+                    style={{
+                      padding: '10px 16px',
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {saving ? '處理中...' : '刪除單字'}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (

@@ -2,6 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 
 export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
+  // 禁用快取避免 304 導致前端空資料
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   // 1) 提供 Study 頁面需要的方言清單（id, code, name）
   const dialects = await prisma.dialect.findMany({
     select: { id: true, code: true, name: true },
