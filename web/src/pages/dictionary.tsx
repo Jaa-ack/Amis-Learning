@@ -36,7 +36,7 @@ export default function Dictionary() {
   useEffect(() => {
     const loadDialects = async () => {
       try {
-        const res = await api.get('/dashboard/dialects', { params: { userId: 'demo-user' } });
+        const res = await api.get('/dashboard/dialects');
         setDialects(res.data.data || []);
       } catch (error) {
         console.error('Failed to load dialects:', error);
