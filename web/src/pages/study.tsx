@@ -25,7 +25,11 @@ export default function Study() {
     setLoading(true);
     api.get('/dashboard/dialects')
       .then(res => {
-        const list: Dialect[] = res.data.dialects || [];
+        const list: Dialect[] = (res.data.data || []).map((d: any) => ({
+          id: d.dialect_id ?? d.id,
+          code: d.code ?? '',
+          name: d.name,
+        }));
         setDialects(list);
 
         const saved = localStorage.getItem('selectedDialectId');

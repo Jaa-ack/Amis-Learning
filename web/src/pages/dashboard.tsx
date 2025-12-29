@@ -1,241 +1,156 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import MobileLayout from '@/components/MobileLayout';
+import { Flame, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 
-interface Dialect {
-  dialect_id: string;
-  name: string;
-  cards: number;
-}
-
-interface PriorityItem {
-  flashcard_id: string;
-  lemma: string;
-  meaning: string | null;
-  priority: number;
-  next_review_at: string | null;
-  interval_days: number;
-  repetitions: number;
-}
-
-interface Stats {
-  total: number;
-  new: number;
-  learning: number;
-  reviewed: number;
-}
+type DialectCount = { id: string; name: string; cards: number };
+type Flashcard = { id: string; lemma: string; meaning?: string; dialect?: string };
 
 export default function Dashboard() {
-  const [dialects, setDialects] = useState<Dialect[]>([]);
-  const [priority, setPriority] = useState<PriorityItem[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [dialects, setDialects] = useState<DialectCount[]>([]);
+  const [recent, setRecent] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      try {
+        setLoading(true);
+        const [dialectRes, cardRes] = await Promise.all([
+          api.get('/dashboard/dialects'),
+          api.get('/cards/next', { params: { limit: 5 } }),
+        ]);
+
+        const counts = (dialectRes.data.data || []).map((d: any) => ({
+          id: d.dialect_id ?? d.id,
+          name: d.name,
+          cards: Number(d.cards || 0),
+        }));
+        setDialects(counts);
+
+        const items = (cardRes.data.items || []).slice(0, 5).map((c: any) => ({
+          id: c.id,
+          lemma: c.lemma,
+          meaning: c.meaning,
+          dialect: c.dialect?.name || '',
+        }));
+        setRecent(items);
+      } catch (err) {
+        console.error('Dashboard load error', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const [dialectsRes, priorityRes] = await Promise.all([
-        api.get('/dashboard/dialects'),
-        api.get('/dashboard/priority'),
-      ]);
+  const totalCards = useMemo(() => dialects.reduce((sum, d) => sum + d.cards, 0), [dialects]);
 
-      setDialects(dialectsRes.data.data || []);
-      setPriority(priorityRes.data.data || []);
-
-      // 計算統計
-      const allCards = priorityRes.data.data || [];
-      const statsData = {
-        total: allCards.length,
-        new: allCards.filter((c: any) => c.status === 'NEW').length,
-        learning: allCards.filter((c: any) => c.status === 'LEARNING').length,
-        reviewed: allCards.filter((c: any) => c.status === 'REVIEWED').length,
-      };
-      setStats(statsData);
-    } catch (err: any) {
-      console.error('Dashboard load error:', err);
-      setError(err.response?.data?.error || err.message || '載入失敗');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getPriorityColor = (priority: number) => {
-    switch (priority) {
-      case 1: return '#d32f2f'; // 紅色 - 急迫
-      case 2: return '#f57c00'; // 橙色 - 重要
-      case 3: return '#fbc02d'; // 黃色 - 一般
-      case 4: return '#388e3c'; // 綠色 - 低優先
-      default: return '#757575'; // 灰色
-    }
-  };
-
-  const getPriorityLabel = (priority: number) => {
-    switch (priority) {
-      case 1: return '急迫';
-      case 2: return '重要';
-      case 3: return '一般';
-      case 4: return '低';
-      default: return '未知';
-    }
-  };
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '未設定';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return '逾期';
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '明天';
-    return `${diffDays} 天後`;
-  };
-
-  if (loading) {
-    return (
-      <main style={{ padding: 16, textAlign: 'center', paddingTop: 40 }}>
-        <div>載入中...</div>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ padding: 20, backgroundColor: '#f8d7da', color: '#721c24', borderRadius: 4 }}>
-          <strong>錯誤：</strong> {error}
-          <button
-            onClick={loadData}
-            style={{ marginLeft: 16, padding: '4px 12px', cursor: 'pointer' }}
-          >
-            重試
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const donutStyle = useMemo(() => {
+    if (!dialects.length || totalCards === 0) return {};
+    const colors = ['#E63946', '#1D3557', '#FFB703', '#2A9D8F', '#6B7280'];
+    let current = 0;
+    const stops = dialects.map((d, idx) => {
+      const start = current;
+      const slice = (d.cards / totalCards) * 360;
+      const end = current + slice;
+      current = end;
+      return `${colors[idx % colors.length]} ${start}deg ${end}deg`;
+    });
+    return {
+      background: `conic-gradient(${stops.join(', ')})`,
+    } as CSSProperties;
+  }, [dialects, totalCards]);
 
   return (
-    <main style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-      <h2>學習儀表板</h2>
-
-      {/* 統計卡片 */}
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-          <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 4, backgroundColor: '#e3f2fd' }}>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>總單字數</div>
-            <div style={{ fontSize: 32, fontWeight: 'bold', color: '#1976d2' }}>{stats.total}</div>
-          </div>
-          <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 4, backgroundColor: '#fff3e0' }}>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>新單字</div>
-            <div style={{ fontSize: 32, fontWeight: 'bold', color: '#f57c00' }}>{stats.new}</div>
-          </div>
-          <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 4, backgroundColor: '#fff9c4' }}>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>學習中</div>
-            <div style={{ fontSize: 32, fontWeight: 'bold', color: '#f9a825' }}>{stats.learning}</div>
-          </div>
-          <div style={{ padding: 16, border: '1px solid #ddd', borderRadius: 4, backgroundColor: '#e8f5e9' }}>
-            <div style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>已複習</div>
-            <div style={{ fontSize: 32, fontWeight: 'bold', color: '#388e3c' }}>{stats.reviewed}</div>
-          </div>
+    <MobileLayout>
+      <main className="px-4 py-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-text">學習儀表板</h1>
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-1 text-sm text-text-muted active:animate-press"
+          >
+            <RefreshCw size={16} /> 刷新
+          </button>
         </div>
-      )}
 
-      {/* 語別列表 */}
-      <section style={{ marginBottom: 24, padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>各語別單字數量</h3>
-        {dialects.length === 0 ? (
-          <div style={{ color: '#666', textAlign: 'center', padding: 20 }}>沒有語別資料</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-            {dialects.map((d) => (
-              <div
-                key={d.dialect_id}
-                style={{
-                  padding: 12,
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 4,
-                  backgroundColor: '#fafafa',
-                }}
-              >
-                <div style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>{d.name}</div>
-                <div style={{ color: '#666' }}>{d.cards} 個單字</div>
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Streak */}
+          <section className="rounded-xl bg-surface shadow-surface p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-text-muted">連續學習</div>
+              <div className="text-3xl font-bold text-text mt-1 flex items-center gap-2">
+                <Flame className="text-accent-yellow" />
+                7 天
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <div className="text-xs text-text-muted mt-1">保持火焰！每日 10 單字。</div>
+            </div>
+            <div className="w-14 h-14 rounded-full bg-accent-yellow/10 flex items-center justify-center">
+              <Flame className="text-accent-yellow" size={28} />
+            </div>
+          </section>
 
-      {/* 優先級佇列 */}
-      <section style={{ padding: 16, border: '1px solid #ddd', borderRadius: 4 }}>
-        <h3>學習優先級佇列（前 20 個）</h3>
-        {priority.length === 0 ? (
-          <div style={{ color: '#666', textAlign: 'center', padding: 20 }}>
-            沒有待學習的單字
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                  <th style={{ padding: 12, textAlign: 'left' }}>優先級</th>
-                  <th style={{ padding: 12, textAlign: 'left' }}>單字</th>
-                  <th style={{ padding: 12, textAlign: 'left' }}>中文意思</th>
-                  <th style={{ padding: 12, textAlign: 'center' }}>複習次數</th>
-                  <th style={{ padding: 12, textAlign: 'center' }}>間隔天數</th>
-                  <th style={{ padding: 12, textAlign: 'center' }}>下次複習</th>
-                </tr>
-              </thead>
-              <tbody>
-                {priority.slice(0, 20).map((item, index) => (
-                  <tr
-                    key={index}
-                    style={{
-                      borderBottom: '1px solid #eee',
-                      backgroundColor: index % 2 === 0 ? 'white' : '#fafafa',
-                    }}
-                  >
-                    <td style={{ padding: 12 }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: 12,
-                          backgroundColor: getPriorityColor(item.priority),
-                          color: 'white',
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        P{item.priority} {getPriorityLabel(item.priority)}
-                      </span>
-                    </td>
-                    <td style={{ padding: 12, fontWeight: 'bold' }}>{item.lemma}</td>
-                    <td style={{ padding: 12, color: '#666' }}>{item.meaning || '（無）'}</td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>{item.repetitions}</td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>{item.interval_days}</td>
-                    <td style={{ padding: 12, textAlign: 'center' }}>
-                      {formatDate(item.next_review_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Donut Chart */}
+          <section className="rounded-xl bg-surface shadow-surface p-4 flex items-center gap-4">
+            <div className="relative w-28 h-28 shrink-0">
+              <div className="absolute inset-0 rounded-full" style={donutStyle}></div>
+              <div className="absolute inset-3 rounded-full bg-surface flex items-center justify-center text-sm text-text">
+                {totalCards || 0} 張
+              </div>
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="text-sm font-semibold text-text">方言分布</div>
+              <div className="space-y-1 text-sm">
+                {dialects.map((d, idx) => {
+                  const colors = ['bg-primary', 'bg-secondary', 'bg-accent-yellow', 'bg-accent-green', 'bg-text-muted'];
+                  const percent = totalCards ? Math.round((d.cards / totalCards) * 100) : 0;
+                  return (
+                    <div key={d.id} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block w-3 h-3 rounded-full ${colors[idx % colors.length]}`}></span>
+                        <span className="text-text">{d.name}</span>
+                      </div>
+                      <div className="text-text-muted text-xs">{d.cards} 張 · {percent}%</div>
+                    </div>
+                  );
+                })}
+                {!dialects.length && (
+                  <div className="text-text-muted text-sm">尚無方言資料</div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Recent Learned Words */}
+          <section className="rounded-xl bg-surface shadow-surface p-4 md:col-span-2">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-sm font-semibold text-text">最近學習的單字</div>
+                <div className="text-xs text-text-muted">最新 5 筆</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {recent.map((w) => (
+                <div key={w.id} className="flex items-center justify-between px-3 py-2 rounded-md bg-background">
+                  <div>
+                    <div className="text-base font-semibold text-text">{w.lemma}</div>
+                    <div className="text-sm text-text-muted">{w.meaning || '—'}</div>
+                  </div>
+                  {w.dialect && <div className="text-xs text-text-muted">{w.dialect}</div>}
+                </div>
+              ))}
+              {!recent.length && (
+                <div className="text-text-muted text-sm">尚無學習記錄，開始一輪學習吧！</div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {loading && (
+          <div className="text-center text-sm text-text-muted">載入中...</div>
         )}
-        {priority.length > 20 && (
-          <div style={{ marginTop: 12, textAlign: 'center', color: '#666', fontSize: 14 }}>
-            還有 {priority.length - 20} 個單字未顯示
-          </div>
-        )}
-      </section>
-    </main>
+      </main>
+    </MobileLayout>
   );
 }

@@ -24,7 +24,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "@types/react": "19.2.7",
+    "@types/react": "18.2.48",
+    "@types/react-dom": "18.2.18",
     "autoprefixer": "^10.4.20",
     "prisma": "^5.22.0",
     "postcss": "^8.4.49",
