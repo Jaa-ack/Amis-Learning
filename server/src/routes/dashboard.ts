@@ -13,26 +13,22 @@ export async function dashboardRoutes(app: FastifyInstance) {
     return { data };
   });
 
-  app.get('/dashboard/priority', async (req) => {
-    const userId = (req.query as any).userId as string;
+  app.get('/dashboard/priority', async () => {
     const data = await prisma.$queryRaw<any[]>`
       WITH stats AS (
         SELECT ucs.*, f.dialect_id,
                EXISTS (
                  SELECT 1 FROM reviews r
                  JOIN review_session s ON s.id = r.session_id
-                 WHERE r.user_id = ${userId}
-                   AND r.flashcard_id = ucs.flashcard_id
+                 WHERE r.flashcard_id = ucs.flashcard_id
                    AND s.type = 'POST_TEST'
                    AND r.score <= 2
                ) AS failed_post_test
         FROM user_card_stats ucs
         JOIN flashcards f ON f.id = ucs.flashcard_id
-        WHERE ucs.user_id = ${userId}
       ), ranked AS (
         SELECT
           stats.flashcard_id,
-          stats.user_id,
           stats.ef,
           stats.repetitions,
           stats.next_review_at,

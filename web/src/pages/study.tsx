@@ -24,7 +24,7 @@ export default function Study() {
   // 載入方言列表
   useEffect(() => {
     setLoading(true);
-    api.get('/dashboard/dialects', { params: { userId: 'demo-user' } })
+    api.get('/dashboard/dialects')
       .then(res => {
         setDialects(res.data.dialects || []);
         setLoading(false);
@@ -40,7 +40,7 @@ export default function Study() {
   const loadCards = async (dialectId: string) => {
     setSelectedDialect(dialectId);
     const res = await api.get('/cards/next', { 
-      params: { userId: 'demo-user', dialectId, limit: 10 } 
+      params: { dialectId, limit: 10 } 
     });
     setItems(res.data.items || []);
     setCurrent(0);
@@ -56,7 +56,6 @@ export default function Study() {
     
     // 提交複習結果（使用 SM-2 演算法）
     await api.post('/reviews', { 
-      userId: 'demo-user', 
       flashcardId: item.id, 
       mode: 'CHOICE', 
       score: proficiency,

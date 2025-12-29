@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const userId = (req.query.userId as string) || '';
-  if (!userId) return res.status(400).json({ error: 'userId required' });
-  
+export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
   try {
     const data = await prisma.$queryRaw<any[]>`
       WITH stats AS (
@@ -12,18 +9,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                EXISTS (
                  SELECT 1 FROM reviews r
                  JOIN review_session s ON s.id = r.session_id
-                 WHERE r.user_id = ${userId}
-                   AND r.flashcard_id = ucs.flashcard_id
+                 WHERE r.flashcard_id = ucs.flashcard_id
                    AND s.type = 'POST_TEST'
                    AND r.score <= 2
                ) AS failed_post_test
         FROM user_card_stats ucs
         JOIN flashcards f ON f.id = ucs.flashcard_id
-        WHERE ucs.user_id = ${userId}
       ), ranked AS (
         SELECT
           stats.flashcard_id,
-          stats.user_id,
           stats.ef,
           stats.repetitions,
           stats.interval_days,

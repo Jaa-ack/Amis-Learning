@@ -3,21 +3,14 @@ import { prisma } from '@/lib/prisma';
 
 export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
   // basic counts
-  const [dialectCount, flashcardCount, sentenceCount, userCount, statCount, reviewCount, sessionCount] = await Promise.all([
+  const [dialectCount, flashcardCount, sentenceCount, statCount, reviewCount, sessionCount] = await Promise.all([
     prisma.dialect.count(),
     prisma.flashcard.count(),
     prisma.sentence.count(),
-    prisma.user.count(),
     prisma.userCardStat.count(),
     prisma.review.count(),
     prisma.reviewSession.count(),
   ]);
-
-  // demo user existence
-  const demoUser = await prisma.user.findUnique({
-    where: { id: 'demo-user' },
-    select: { id: true, email: true, name: true },
-  });
 
   // dialect list with card counts
   const counts = await prisma.$queryRaw<any[]>`
@@ -35,15 +28,14 @@ export default async function handler(_req: NextApiRequest, res: NextApiResponse
     cards: Number(r.cards ?? 0),
   }));
 
-  // user stat coverage for demo-user
-  const demoStats = await prisma.$queryRaw<any[]>`
+  // user card stat coverage (single user now)
+  const statsCount = await prisma.$queryRaw<any[]>`
     SELECT COUNT(*)::bigint AS stats, COUNT(DISTINCT flashcard_id)::bigint AS covered
-    FROM user_card_stats
-    WHERE user_id = 'demo-user';
+    FROM user_card_stats;
   `;
   const coverage = {
-    stats: Number(demoStats?.[0]?.stats ?? 0),
-    coveredFlashcards: Number(demoStats?.[0]?.covered ?? 0),
+    stats: Number(statsCount?.[0]?.stats ?? 0),
+    coveredFlashcards: Number(statsCount?.[0]?.covered ?? 0),
   };
 
   res.json({
@@ -51,19 +43,16 @@ export default async function handler(_req: NextApiRequest, res: NextApiResponse
       dialects: dialectCount,
       flashcards: flashcardCount,
       sentences: sentenceCount,
-      users: userCount,
       userCardStats: statCount,
       reviews: reviewCount,
       sessions: sessionCount,
     },
-    demoUser: demoUser ?? null,
     dialects,
-    demoCoverage: coverage,
+    coverage,
     recommendations: {
       requireDialects: dialectCount === 0,
       requireFlashcards: flashcardCount === 0,
-      requireDemoUser: !demoUser,
-      requireDemoStats: coverage.stats === 0,
+      requireStats: coverage.stats === 0,
     },
   });
 }

@@ -25,7 +25,6 @@ interface Stats {
 }
 
 export default function Dashboard() {
-  const userId = 'demo-user';
   const [dialects, setDialects] = useState<Dialect[]>([]);
   const [priority, setPriority] = useState<PriorityItem[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -42,8 +41,8 @@ export default function Dashboard() {
     
     try {
       const [dialectsRes, priorityRes] = await Promise.all([
-        api.get('/dashboard/dialects', { params: { userId } }),
-        api.get('/dashboard/priority', { params: { userId } }),
+        api.get('/dashboard/dialects'),
+        api.get('/dashboard/priority'),
       ]);
 
       setDialects(dialectsRes.data.data || []);

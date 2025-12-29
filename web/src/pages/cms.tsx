@@ -40,8 +40,8 @@ export default function CMS() {
 
   const loadDialects = async () => {
     try {
-      const res = await api.get('/dashboard/dialects', { params: { userId: 'demo-user' } });
-      const dialectData = res.data.data || [];
+      const res = await api.get('/dashboard/dialects');
+      const dialectData = res.data.dialects || [];
       setDialects(dialectData);
       if (dialectData.length > 0) {
         setSelectedDialect(dialectData[0].id);

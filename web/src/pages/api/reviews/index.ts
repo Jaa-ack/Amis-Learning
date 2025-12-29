@@ -15,12 +15,12 @@ function mapScoreToQuality(mode: string, score: number, similarity?: number) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { userId, flashcardId, mode, score, similarity, isPostTest, sessionId } = req.body;
+  const { flashcardId, mode, score, similarity, isPostTest, sessionId } = req.body;
 
   const stat = await prisma.userCardStat.findUnique({
-    where: { userId_flashcardId: { userId, flashcardId } },
+    where: { flashcardId },
   }).catch(() => null);
-  const base = stat ?? await prisma.userCardStat.create({ data: { userId, flashcardId } });
+  const base = stat ?? await prisma.userCardStat.create({ data: { flashcardId } });
 
   const quality = mapScoreToQuality(mode, score, similarity);
   let repetitions = base.repetitions;
@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     data: { ef, intervalDays, repetitions, nextReviewAt, currentPriority, lastReviewAt: new Date() },
   });
   const review = await prisma.review.create({
-    data: { userId, flashcardId, sessionId, mode, score, similarity, quality },
+    data: { flashcardId, sessionId, mode, score, similarity, quality },
   });
   res.json({ ok: true, review, stat: updated });
 }

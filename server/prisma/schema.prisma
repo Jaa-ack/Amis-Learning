@@ -26,31 +26,6 @@ enum ReviewSessionType {
   POST_TEST
 }
 
-model User {
-  id          String          @id @default(cuid())
-  email       String          @unique
-  name        String?
-  createdAt   DateTime        @default(now())
-  preferences UserPreference?
-  stats       UserCardStat[]
-  reviews     Review[]
-  sessions    ReviewSession[]
-
-  @@map("users")
-}
-
-model UserPreference {
-  id               String   @id @default(cuid())
-  userId           String   @unique @map("user_id")
-  user             User     @relation(fields: [userId], references: [id])
-  dailyNewTarget   Int      @default(10) // 1-50
-  reviewRatio      Int      @default(50) // 10-80
-  dialectFilter    String[] // array of dialect codes or ids
-  spellingTolerance Int     @default(85) // 70-100
-
-  @@map("user_preferences")
-}
-
 model Dialect {
   id        String   @id @default(cuid())
   code      String   @unique
@@ -72,7 +47,6 @@ model Flashcard {
   meaning    String?
   status     CardStatus @default(NEW)
   tags       String[]
-  createdBy  String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   stats      UserCardStat[]
@@ -90,7 +64,6 @@ model Sentence {
   dialect    Dialect  @relation(fields: [dialectId], references: [id])
   text       String
   translation String?
-  createdBy  String?
   createdAt  DateTime @default(now())
   links      SentenceWordLink[]
 
@@ -113,8 +86,6 @@ model SentenceWordLink {
 
 model UserCardStat {
   id             String     @id @default(cuid())
-  userId         String     @map("user_id")
-  user           User       @relation(fields: [userId], references: [id])
   flashcardId    String     @map("flashcard_id")
   flashcard      Flashcard  @relation(fields: [flashcardId], references: [id])
   ef             Float      @default(2.5) // SM-2 EF
@@ -126,16 +97,14 @@ model UserCardStat {
   status         CardStatus @default(NEW)
   wrongCount     Int        @default(0)  @map("wrong_count")
 
-  @@index([userId, currentPriority])
+  @@index([currentPriority])
   @@index([nextReviewAt])
-  @@unique([userId, flashcardId])
+  @@unique([flashcardId])
   @@map("user_card_stats")
 }
 
 model ReviewSession {
   id        String            @id @default(cuid())
-  userId    String            @map("user_id")
-  user      User              @relation(fields: [userId], references: [id])
   type      ReviewSessionType @default(NORMAL)
   createdAt DateTime          @default(now())
   reviews   Review[]
@@ -145,8 +114,6 @@ model ReviewSession {
 
 model Review {
   id           String       @id @default(cuid())
-  userId       String       @map("user_id")
-  user         User         @relation(fields: [userId], references: [id])
   flashcardId  String       @map("flashcard_id")
   flashcard    Flashcard    @relation(fields: [flashcardId], references: [id])
   sessionId    String?      @map("session_id")
@@ -157,6 +124,6 @@ model Review {
   quality      Int?         // mapped SM-2 quality (e.g., 2-5)
   createdAt    DateTime     @default(now()) @map("created_at")
 
-  @@index([userId, flashcardId])
+  @@index([flashcardId])
   @@map("reviews")
 }

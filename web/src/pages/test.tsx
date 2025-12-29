@@ -33,7 +33,7 @@ export default function Test() {
   const loadTestItems = async () => {
     // 根據演算法獲取需要測驗的單字
     // 優先順序：1) 最近學習的 2) 需要複習的 3) 容易忘記的
-    const params: any = { userId: 'demo-user', limit: 10 };
+    const params: any = { limit: 10 };
     if (dialectId) params.dialectId = dialectId;
     
     const res = await api.get('/cards/next', { params });
@@ -52,7 +52,6 @@ export default function Test() {
     
     // 提交測驗結果（標記為 POST_TEST）
     await api.post('/reviews', { 
-      userId: 'demo-user', 
       flashcardId: item.id, 
       mode: 'SPELL', 
       score, 
