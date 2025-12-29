@@ -82,12 +82,15 @@ export default function Study() {
       }
 
       // 移動到下一張卡片
-      if (current < items.length - 1) {
-        setCurrent(current + 1);
-      } else {
-        // 本輪學習完成
-        alert(`完成 ${newStudied} 個單字學習！`);
-      }
+      setCurrent(prev => {
+        if (prev < items.length - 1) {
+          return prev + 1;
+        } else {
+          // 本輪學習完成
+          alert(`完成 ${newStudied} 個單字學習！`);
+          return prev;
+        }
+      });
     } catch (err: any) {
       console.error('提交複習結果失敗', err);
       alert(`提交失敗：${err?.response?.data?.error || err.message}`);
