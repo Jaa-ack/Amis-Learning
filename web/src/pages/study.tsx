@@ -29,14 +29,15 @@ export default function Study() {
         const list: Dialect[] = res.data.dialects || [];
         setDialects(list);
 
-        // 從 localStorage 或第一個方言自動選擇
         const saved = localStorage.getItem('selectedDialectId');
         const fallback = list.length > 0 ? list[0].id : null;
         const toUse = saved && list.find((d: Dialect) => d.id === saved) ? saved : fallback;
-
         if (toUse) {
+          setSelectedDialect(toUse);
           loadCards(toUse);
         } else {
+          setSelectedDialect(null);
+          setItems([]);
           setLoading(false);
         }
       })
@@ -66,128 +67,81 @@ export default function Study() {
 
   const rate = async (proficiency: number) => {
     if (!item) return;
-    
-    // 提交複習結果（使用 SM-2 演算法）
-    await api.post('/reviews', { 
-      flashcardId: item.id, 
-      mode: 'CHOICE', 
-      score: proficiency,
-      sessionId 
-    });
+    try {
+      // 提交複習結果（使用 SM-2 演算法）
+      await api.post('/reviews', { 
+        flashcardId: item.id, 
+        mode: 'CHOICE', 
+        score: proficiency,
+        sessionId 
+      });
 
-    const newStudied = studiedCount + 1;
-    setStudiedCount(newStudied);
+      const newStudied = studiedCount + 1;
+      setStudiedCount(newStudied);
 
-    // 每學習 10 個單字，自動跳轉到測驗
-    if (newStudied >= 10) {
-      router.push(`/test?dialectId=${selectedDialect}&fromStudy=true`);
-      return;
-    }
+      // 每學習 10 個單字，自動跳轉到測驗
+      if (newStudied >= 10) {
+        router.push(`/test?dialectId=${selectedDialect}&fromStudy=true`);
+        return;
+      }
 
-    // 移動到下一張卡片
-    if (current < items.length - 1) {
-      setCurrent(current + 1);
-    } else {
-      // 本輪學習完成
-      alert(`完成 ${newStudied} 個單字學習！`);
-      setSelectedDialect(null);
+      // 移動到下一張卡片
+      if (current < items.length - 1) {
+        setCurrent(current + 1);
+      } else {
+        // 本輪學習完成
+        alert(`完成 ${newStudied} 個單字學習！`);
+      }
+    } catch (err: any) {
+      console.error('提交複習結果失敗', err);
+      alert(`提交失敗：${err?.response?.data?.error || err.message}`);
     }
   };
 
-  // 如果尚未選擇方言，顯示選擇介面
-  if (!selectedDialect) {
-    return (
-      <main style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
-        <h2>選擇學習語別</h2>
-        <p style={{ color: '#666', marginBottom: 20 }}>
-          選擇一個阿美語方言開始學習。系統會根據 SM-2 間隔重複演算法為您推薦最適合複習的單字。
-        </p>
-        
-        {loading && (
-          <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-            載入方言列表中...
-          </div>
-        )}
-
-        {error && (
-          <div style={{ 
-            padding: 16, 
-            background: '#fee2e2', 
-            borderRadius: 12, 
-            color: '#dc2626',
-            marginBottom: 20 
-          }}>
-            <strong>錯誤：</strong> {error}
-            <div style={{ fontSize: 14, marginTop: 8 }}>
-              請確認：
-              <ol style={{ marginTop: 8, marginLeft: 20 }}>
-                <li>Vercel 環境變數 DATABASE_URL 已設定</li>
-                <li>資料庫連接正常</li>
-                <li>已執行資料匯入</li>
-              </ol>
-            </div>
-          </div>
-        )}
-
-        {!loading && !error && dialects.length === 0 && (
-          <div style={{ 
-            padding: 16, 
-            background: '#fef9c3', 
-            borderRadius: 12, 
-            color: '#854d0e',
-            marginBottom: 20 
-          }}>
-            <strong>提示：</strong> 尚未匯入任何方言資料。
-            <div style={{ fontSize: 14, marginTop: 8 }}>
-              請在本地執行 <code style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: 4 }}>npm run import</code> 匯入詞彙資料。
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: 'grid', gap: 12 }}>
-          {dialects.map(d => (
-            <button
-              key={d.id}
-              onClick={() => loadCards(d.id)}
-              style={{
-                padding: '16px 20px',
-                fontSize: 18,
-                borderRadius: 12,
-                border: '2px solid #e0e0e0',
-                background: 'white',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#3b82f6';
-                e.currentTarget.style.background = '#eff6ff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e0e0e0';
-                e.currentTarget.style.background = 'white';
-              }}
-            >
-              {d.name}
-            </button>
-          ))}
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2>學習模式</h2>
-        <div style={{ fontSize: 14, color: '#666' }}>
-          進度: {studiedCount}/10
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0 }}>學習模式</h2>
+          <div style={{ fontSize: 14, color: '#666' }}>進度: {studiedCount}/10</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            value={selectedDialect || ''}
+            onChange={e => {
+              const id = e.target.value;
+              setSelectedDialect(id);
+              localStorage.setItem('selectedDialectId', id);
+              loadCards(id);
+            }}
+            style={{ padding: 8, borderRadius: 8, border: '1px solid #ccc', minWidth: 180 }}
+          >
+            {dialects.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => selectedDialect && loadCards(selectedDialect)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
+          >
+            重新載入
+          </button>
         </div>
       </div>
       
+      {error && (
+        <div style={{ padding: 12, background: '#fee2e2', borderRadius: 8, color: '#b91c1c', marginBottom: 12 }}>
+          錯誤：{error}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
           載入中...
+        </div>
+      ) : !selectedDialect ? (
+        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+          尚未有可用的語別，請先在 CMS 新增方言與單字。
         </div>
       ) : item ? (
         <>
@@ -244,7 +198,7 @@ export default function Study() {
         </>
       ) : (
         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-          目前沒有可學習的單字，請先在 CMS 新增資料。
+          目前沒有可學習的單字，請先在 CMS 新增資料，或點擊「重新載入」。
         </div>
       )}
     </main>

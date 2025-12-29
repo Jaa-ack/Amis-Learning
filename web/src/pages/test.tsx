@@ -24,6 +24,7 @@ export default function Test() {
   const [sessionId, setSessionId] = useState<string>('');
   const [isFinished, setIsFinished] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (router.isReady) {
@@ -54,37 +55,45 @@ export default function Test() {
   const item = items[current];
 
   const submitSpell = async () => {
-    if (!item) return;
+    if (!item || submitting) return;
+    setSubmitting(true);
     
-    const similarity = similarityPercent(input, item.lemma);
-    const isCorrect = similarity >= 85; // 85% 以上視為正確
-    const score = similarity >= 100 ? 4 : similarity >= 85 ? 3 : similarity >= 70 ? 2 : 1;
-    
-    // 提交測驗結果（標記為 POST_TEST）
-    await api.post('/reviews', { 
-      flashcardId: item.id, 
-      mode: 'SPELL', 
-      score, 
-      similarity,
-      isPostTest: true,  // 標記為測驗模式
-      sessionId 
-    });
+    try {
+      const similarity = similarityPercent(input, item.lemma);
+      const isCorrect = similarity >= 85; // 85% 以上視為正確
+      const score = similarity >= 100 ? 4 : similarity >= 85 ? 3 : similarity >= 70 ? 2 : 1;
+      
+      // 提交測驗結果（標記為 POST_TEST）
+      await api.post('/reviews', { 
+        flashcardId: item.id, 
+        mode: 'SPELL', 
+        score, 
+        similarity,
+        isPostTest: true,  // 標記為測驗模式
+        sessionId 
+      });
 
-    // 記錄測驗結果
-    const newResults = [...results, {
-      flashcard: item,
-      userInput: input,
-      similarity,
-      isCorrect
-    }];
-    setResults(newResults);
-    setInput('');
+      // 記錄測驗結果
+      const newResults = [...results, {
+        flashcard: item,
+        userInput: input,
+        similarity,
+        isCorrect
+      }];
+      setResults(newResults);
+      setInput('');
 
-    // 移動到下一題或結束測驗
-    if (current < items.length - 1) {
-      setCurrent(current + 1);
-    } else {
-      setIsFinished(true);
+      // 移動到下一題或結束測驗
+      if (current < items.length - 1) {
+        setCurrent(current + 1);
+      } else {
+        setIsFinished(true);
+      }
+    } catch (err: any) {
+      console.error('提交測驗結果失敗', err);
+      alert(`提交失敗：${err?.response?.data?.error || err.message}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -247,20 +256,20 @@ export default function Test() {
 
           <button 
             onClick={submitSpell} 
-            disabled={!input.trim()}
+            disabled={!input.trim() || submitting}
             style={{ 
               padding: 16, 
               width: '100%',
               fontSize: 18,
               borderRadius: 12,
-              background: input.trim() ? '#3b82f6' : '#e5e7eb',
-              color: input.trim() ? 'white' : '#9ca3af',
+              background: input.trim() && !submitting ? '#3b82f6' : '#e5e7eb',
+              color: input.trim() && !submitting ? 'white' : '#9ca3af',
               border: 'none',
-              cursor: input.trim() ? 'pointer' : 'not-allowed',
+              cursor: input.trim() && !submitting ? 'pointer' : 'not-allowed',
               fontWeight: 'bold'
             }}
           >
-            提交答案
+            {submitting ? '提交中...' : '提交答案'}
           </button>
         </>
       ) : loading ? (
