@@ -262,39 +262,16 @@ curl 'https://amis-learning.vercel.app/api/cards/next?dialectId=xiuguluan&userId
 
 ---
 
-## 🔧 資料庫設定
+## 🔧 資料庫設定（最終版）
 
-### 首次部署：建立索引
+### 首次部署：建立索引（建議用最終版）
 
-在 Supabase **SQL Editor** 執行：
+請在 Supabase **SQL Editor** 直接執行：
 
-```sql
--- 啟用擴充
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+- 最終索引腳本：`db/final-indexes.sql`
+- 說明文件：`PERFORMANCE.md`
 
--- 模糊搜尋索引
-CREATE INDEX IF NOT EXISTS idx_flashcards_lemma_trgm
-  ON flashcards USING gin (lemma gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_sentences_text_trgm
-  ON sentences USING gin (text gin_trgm_ops);
-
--- 複習排程索引
-CREATE INDEX IF NOT EXISTS idx_user_card_stats_next_review
-  ON user_card_stats (next_review_at);
-
-CREATE INDEX IF NOT EXISTS idx_user_card_stats_user_priority
-  ON user_card_stats (user_id, current_priority);
-```
-
-或直接匯入 `db/indexes.sql`：
-
-```bash
-# 使用 Supabase CLI
-supabase db push
-
-# 或手動複製 db/indexes.sql 內容到 SQL Editor
-```
+此最終版已整合模糊搜尋、複習排程、POST_TEST 查詢加速、外鍵索引與統計更新，並修正欄位大小寫（例如 `"createdAt"`）。
 
 ---
 
@@ -331,13 +308,14 @@ npx vercel logs --follow
 
 ---
 
-## 🎓 技術文檔
+## 🎓 技術文檔 / 性能
 
 詳細文檔位於 `docs/` 目錄：
 
-- **[tech-architecture.md](docs/tech-architecture.md)** — 系統架構、技術選型理由
-- **[algorithms.md](docs/algorithms.md)** — SM-2 演算法細節、Smart Linker 實現
-- **[ui-ux.md](docs/ui-ux.md)** — iPhone 介面設計、使用者體驗指南
+ - **[tech-architecture.md](docs/tech-architecture.md)** — 系統架構、技術選型理由
+ - **[algorithms.md](docs/algorithms.md)** — SM-2 演算法細節、Smart Linker 實現
+ - **[ui-ux.md](docs/ui-ux.md)** — iPhone 介面設計、使用者體驗指南
+ - **[PERFORMANCE.md](PERFORMANCE.md)** — 資料庫性能優化最終版（整合指南）
 
 ---
 
