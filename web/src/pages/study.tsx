@@ -17,7 +17,6 @@ export default function Study() {
   const [items, setItems] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
   const [studiedCount, setStudiedCount] = useState(0);
-  const [sessionId, setSessionId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
@@ -58,8 +57,6 @@ export default function Study() {
     setItems(res.data.items || []);
     setCurrent(0);
     setStudiedCount(0);
-    // 創建學習會話 ID
-    setSessionId(`study-${dialectId}-${Date.now()}`);
     setLoading(false);
   };
 
@@ -72,8 +69,7 @@ export default function Study() {
       await api.post('/reviews', { 
         flashcardId: item.id, 
         mode: 'CHOICE', 
-        score: proficiency,
-        sessionId 
+        score: proficiency
       });
 
       const newStudied = studiedCount + 1;

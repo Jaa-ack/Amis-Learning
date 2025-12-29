@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     data: { ef, intervalDays, repetitions, nextReviewAt, currentPriority, lastReviewAt: new Date() },
   });
   const review = await prisma.review.create({
-    data: { flashcardId, sessionId, mode, score, similarity, quality },
+    data: { flashcardId, sessionId: sessionId || null, mode, score, similarity, quality },
   });
   res.json({ ok: true, review, stat: updated });
 }

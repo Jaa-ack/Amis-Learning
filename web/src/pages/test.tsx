@@ -21,7 +21,6 @@ export default function Test() {
   const [input, setInput] = useState('');
   const [current, setCurrent] = useState(0);
   const [results, setResults] = useState<TestResult['items']>([]);
-  const [sessionId, setSessionId] = useState<string>('');
   const [isFinished, setIsFinished] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +47,6 @@ export default function Test() {
     
     const res = await api.get('/cards/next', { params });
     setItems(res.data.items || []);
-    setSessionId(`test-${params.dialectId || 'all'}-${Date.now()}`);
     setLoading(false);
   };
 
@@ -71,8 +69,7 @@ export default function Test() {
         mode: 'SPELL', 
         score, 
         similarity,
-        isPostTest: true,  // 標記為測驗模式
-        sessionId 
+        isPostTest: true  // 標記為測驗模式
       });
 
       // 記錄測驗結果
