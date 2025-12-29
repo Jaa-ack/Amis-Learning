@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { api } from '@/lib/api';
-import { Card } from '@/components/Card';
-import { BottomSheet } from '@/components/BottomSheet';
+import MobileLayout from '@/components/MobileLayout';
 
 interface Dialect {
   id: string;
@@ -19,6 +18,7 @@ export default function Study() {
   const [studiedCount, setStudiedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [flipped, setFlipped] = useState(false); // 卡片翻面狀態
 
   // 載入方言列表和恢復已選擇的語系
   useEffect(() => {
@@ -98,108 +98,113 @@ export default function Study() {
   };
 
   return (
-    <main style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ margin: 0 }}>學習模式</h2>
-          <div style={{ fontSize: 14, color: '#666' }}>進度: {studiedCount}/10</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <select
-            value={selectedDialect || ''}
-            onChange={e => {
-              const id = e.target.value;
-              setSelectedDialect(id);
-              localStorage.setItem('selectedDialectId', id);
-              loadCards(id);
-            }}
-            style={{ padding: 8, borderRadius: 8, border: '1px solid #ccc', minWidth: 180 }}
-          >
-            {dialects.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => selectedDialect && loadCards(selectedDialect)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
-          >
-            重新載入
-          </button>
-        </div>
-      </div>
-      
-      {error && (
-        <div style={{ padding: 12, background: '#fee2e2', borderRadius: 8, color: '#b91c1c', marginBottom: 12 }}>
-          錯誤：{error}
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-          載入中...
-        </div>
-      ) : !selectedDialect ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-          尚未有可用的語別，請先在 CMS 新增方言與單字。
-        </div>
-      ) : item ? (
-        <>
-          <Card 
-            front={item.lemma} 
-            back={
-              <>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{item.meaning}</div>
-                {item.phonetic && (
-                  <div style={{ fontSize: 16, opacity: 0.7, fontStyle: 'italic' }}>
-                    /{item.phonetic}/
-                  </div>
-                )}
-              </>
-            } 
-          />
-          <BottomSheet>
-            <div style={{ marginBottom: 12, fontSize: 14, color: '#666', textAlign: 'center' }}>
-              評估您對這個單字的熟練程度
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-              {[
-                { score: 1, label: '完全不會', color: '#ef4444' },
-                { score: 2, label: '有點印象', color: '#f59e0b' },
-                { score: 3, label: '基本熟悉', color: '#3b82f6' },
-                { score: 4, label: '非常熟練', color: '#10b981' }
-              ].map(({ score, label, color }) => (
-                <button 
-                  key={score} 
-                  onClick={() => rate(score)} 
-                  style={{ 
-                    padding: '16px 8px',
-                    fontSize: 16,
-                    borderRadius: 12,
-                    border: 'none',
-                    background: color,
-                    color: 'white',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 4,
-                    transition: 'transform 0.1s'
-                  }}
-                  onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-                  onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <div style={{ fontSize: 20, fontWeight: 'bold' }}>{score}</div>
-                  <div style={{ fontSize: 12 }}>{label}</div>
-                </button>
+    <MobileLayout>
+      <main className="px-4 py-3">
+        {/* Header: daily progress & dialect selector */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="m-0 text-lg font-semibold">學習模式</h2>
+            <div className="text-sm text-text-muted">進度: {studiedCount}/10</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              className="px-3 py-2 rounded-md border border-gray-300 min-w-[180px] bg-surface"
+              value={selectedDialect || ''}
+              onChange={(e) => {
+                const id = e.target.value;
+                setSelectedDialect(id);
+                localStorage.setItem('selectedDialectId', id);
+                loadCards(id);
+              }}
+            >
+              {dialects.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
-            </div>
-          </BottomSheet>
-        </>
-      ) : (
-        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-          目前沒有可學習的單字，請先在 CMS 新增資料，或點擊「重新載入」。
+            </select>
+            <button
+              onClick={() => selectedDialect && loadCards(selectedDialect)}
+              className="px-3 py-2 rounded-md border border-gray-300 bg-surface"
+            >
+              重新載入
+            </button>
+          </div>
         </div>
-      )}
-    </main>
+
+        {error && (
+          <div className="p-3 rounded-md mb-3 bg-red-100 text-red-700">錯誤：{error}</div>
+        )}
+
+        {loading ? (
+          <div className="text-center py-10 text-text-muted">載入中...</div>
+        ) : !selectedDialect ? (
+          <div className="text-center py-10 text-text-muted">
+            尚未有可用的語別，請先在 CMS 新增方言與單字。
+          </div>
+        ) : item ? (
+          <>
+            {/* Flashcard */}
+            <div
+              className="h-64 rounded-lg bg-surface shadow-surface flex items-center justify-center text-2xl select-none mb-24"
+              onClick={() => setFlipped((v) => !v)}
+            >
+              <div className={flipped ? 'animate-flip' : ''}>
+                {flipped ? (
+                  <div className="text-center px-4">
+                    <div className="text-2xl mb-2">{item.meaning}</div>
+                    {item.phonetic && (
+                      <div className="text-base opacity-70 italic">/{item.phonetic}/</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-3xl font-bold">{item.lemma}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom controls in thumb zone (fixed above nav) */}
+            <div className="fixed bottom-16 left-0 right-0 px-4">
+              {!flipped ? (
+                <button
+                  className="w-full py-3 rounded-lg bg-primary text-white text-lg active:animate-press"
+                  onClick={() => setFlipped(true)}
+                >
+                  顯示答案
+                </button>
+              ) : (
+                <div>
+                  <div className="mb-2 text-center text-sm text-text-muted">評估您對這個單字的熟練程度</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { score: 1, label: 'Again', cls: 'bg-primary' },
+                      { score: 2, label: 'Hard', cls: 'bg-accent-yellow' },
+                      { score: 3, label: 'Good', cls: 'bg-secondary' },
+                      { score: 4, label: 'Easy', cls: 'bg-accent-green' },
+                    ].map(({ score, label, cls }) => (
+                      <button
+                        key={score}
+                        onClick={() => {
+                          setFlipped(false);
+                          rate(score);
+                        }}
+                        className={`py-3 rounded-lg text-white flex flex-col items-center gap-1 active:animate-press ${cls}`}
+                      >
+                        <div className="text-base font-bold">{score}</div>
+                        <div className="text-[11px]">{label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-10 text-text-muted">
+            目前沒有可學習的單字，請先在 CMS 新增資料，或點擊「重新載入」。
+          </div>
+        )}
+      </main>
+    </MobileLayout>
   );
 }
