@@ -6,12 +6,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const dialectId = req.query.dialectId as string | undefined;
   if (!q) return res.json({ items: [] });
 
-  const items = await prisma.$queryRaw<any[]>`
-    SELECT id, lemma, meaning, dialect_id, similarity(lemma, ${q}) AS sim
-    FROM flashcards
-    ${dialectId ? prisma.$queryRaw`WHERE dialect_id = ${dialectId}` : prisma.$queryRaw`WHERE 1=1`}
-    ORDER BY sim DESC
-    LIMIT 50;
-  `;
+  let items: any[];
+
+  if (dialectId) {
+    items = await prisma.$queryRaw<any[]>`
+      SELECT id, lemma, meaning, dialect_id, similarity(lemma, ${q}) AS sim
+      FROM flashcards
+      WHERE dialect_id = ${dialectId}
+      ORDER BY sim DESC
+      LIMIT 50;
+    `;
+  } else {
+    items = await prisma.$queryRaw<any[]>`
+      SELECT id, lemma, meaning, dialect_id, similarity(lemma, ${q}) AS sim
+      FROM flashcards
+      ORDER BY sim DESC
+      LIMIT 50;
+    `;
+  }
+
   res.json({ items });
 }
