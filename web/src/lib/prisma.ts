@@ -37,13 +37,13 @@ function buildPoolingUrlFromDirect(url: string): string | null {
 function getServerlessFallbackUrl(): string | null {
   const password = process.env.SUPABASE_PASSWORD;
   const ref = process.env.SUPABASE_REF || 'komwtkwhfvhuswfwvnwu';
-  const region = process.env.SUPABASE_REGION || 'ap-northeast-1';
+  const region = process.env.SUPABASE_REGION || 'ap-south-1';
   
   // Only build fallback if we have a password
   if (!password) return null;
   
   const pooledUser = `postgres.${ref}`;
-  return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`;
+  return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require`;
 }
 
 let effectiveUrl = process.env.DATABASE_URL;
@@ -77,3 +77,14 @@ export const prisma =
   );
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
+
+// Diagnostics logging (remove in production if verbose logs are unwanted)
+if (typeof window === 'undefined') {
+  // 伺服器端才會執行
+  if (!effectiveUrl) {
+    console.warn('[Prisma] ⚠️ DATABASE_URL not resolved - queries may fail');
+  } else {
+    const preview = effectiveUrl.substring(0, 60) + '...';
+    console.log(`[Prisma] ✓ Connected to ${preview}`);
+  }
+}
