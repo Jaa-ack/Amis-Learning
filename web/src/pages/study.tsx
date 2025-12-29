@@ -21,12 +21,17 @@ export default function Study() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
-  // 載入方言列表
+  // 載入方言列表和恢復已選擇的語系
   useEffect(() => {
     setLoading(true);
     api.get('/dashboard/dialects')
       .then(res => {
         setDialects(res.data.dialects || []);
+        // 從 localStorage 恢復選擇
+        const saved = localStorage.getItem('selectedDialectId');
+        if (saved && res.data.dialects?.find((d: Dialect) => d.id === saved)) {
+          loadCards(saved);
+        }
         setLoading(false);
       })
       .catch(err => {

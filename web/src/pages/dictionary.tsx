@@ -7,6 +7,7 @@ interface Flashcard {
   meaning: string | null;
   phonetic: string | null;
   dialect_id: string | null;
+  dialect_name?: string;
   tags: string[];
 }
 
@@ -167,7 +168,7 @@ export default function Dictionary() {
                     {item.meaning || '（無中文意思）'}
                   </div>
                   <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-                    {getDialectName(item.dialect_id)}
+                    {item.dialect_name || getDialectName(item.dialect_id)}
                     {item.phonetic && ` • ${item.phonetic}`}
                   </div>
                 </li>

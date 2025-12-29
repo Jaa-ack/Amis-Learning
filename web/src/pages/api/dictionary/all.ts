@@ -13,6 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         meaning: true,
         phonetic: true,
         dialectId: true,
+        dialect: { select: { name: true } },
         tags: true,
       },
       orderBy: {
@@ -27,6 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         meaning: item.meaning,
         phonetic: item.phonetic,
         dialect_id: item.dialectId,
+        dialect_name: item.dialect?.name || '未分類',
         tags: item.tags,
       })),
     });

@@ -28,17 +28,24 @@ export default function Test() {
     if (router.isReady) {
       loadTestItems();
     }
-  }, [router.isReady, dialectId]);
+  }, [router.isReady]);
 
   const loadTestItems = async () => {
     // 根據演算法獲取需要測驗的單字
     // 優先順序：1) 最近學習的 2) 需要複習的 3) 容易忘記的
     const params: any = { limit: 10 };
-    if (dialectId) params.dialectId = dialectId;
+    
+    // 使用已選擇的語系，若無則使用 URL 參數
+    const selectedDialectId = localStorage.getItem('selectedDialectId');
+    if (selectedDialectId) {
+      params.dialectId = selectedDialectId;
+    } else if (dialectId) {
+      params.dialectId = dialectId;
+    }
     
     const res = await api.get('/cards/next', { params });
     setItems(res.data.items || []);
-    setSessionId(`test-${dialectId || 'all'}-${Date.now()}`);
+    setSessionId(`test-${params.dialectId || 'all'}-${Date.now()}`);
   };
 
   const item = items[current];
