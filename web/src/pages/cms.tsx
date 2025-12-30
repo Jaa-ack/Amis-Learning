@@ -46,50 +46,99 @@ export default function CMS() {
   };
 
   const addCard = async () => {
+    // 驗證必填欄位
     if (!lemma || !selectedDialect) {
       setMessage('❌ 請填寫單字和選擇語別');
       return;
     }
+
+    // 驗證單字格式（不能只有空白）
+    const trimmedLemma = lemma.trim();
+    if (!trimmedLemma) {
+      setMessage('❌ 單字不能為空白');
+      return;
+    }
+
+    // 驗證單字長度
+    if (trimmedLemma.length > 100) {
+      setMessage('❌ 單字長度不能超過 100 個字元');
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post('/cms/flashcards', {
         dialectId: selectedDialect,
-        lemma,
-        meaning,
-        tags: tags ? tags.split(',').map((t) => t.trim()) : [],
+        lemma: trimmedLemma,
+        meaning: meaning.trim() || undefined,
+        tags: tags ? tags.split(',').map((t) => t.trim()).filter(t => t) : [],
       });
       setMessage('✅ 單字新增成功！');
       setLemma('');
       setMeaning('');
       setTags('');
     } catch (error: any) {
-      setMessage(`❌ 新增失敗: ${error.response?.data?.error || error.message}`);
+      const errorMsg = error.response?.data?.error || error.message;
+      // 針對不同錯誤給予明確提示
+      if (errorMsg.includes('Duplicate') || errorMsg.includes('duplicate') || error.response?.status === 409) {
+        setMessage(`❌ 此單字「${trimmedLemma}」已存在於該語別中，請勿重複新增`);
+      } else if (error.response?.status === 400) {
+        setMessage(`❌ 輸入格式錯誤: ${errorMsg}`);
+      } else if (error.response?.status === 500) {
+        setMessage('❌ 伺服器錯誤，請稍後再試或聯繫管理員');
+      } else {
+        setMessage(`❌ 新增失敗: ${errorMsg}`);
+      }
+      console.error('CMS add card error:', error.response?.data);
     } finally {
       setLoading(false);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
   const addSentence = async () => {
+    // 驗證必填欄位
     if (!text || !sentenceDialect) {
       setMessage('❌ 請填寫例句和選擇語別');
       return;
     }
+
+    // 驗證例句格式
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      setMessage('❌ 例句不能為空白');
+      return;
+    }
+
+    // 驗證例句長度
+    if (trimmedText.length > 500) {
+      setMessage('❌ 例句長度不能超過 500 個字元');
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post('/cms/sentences', {
         dialectId: sentenceDialect,
-        text,
-        translation: translation || undefined,
+        text: trimmedText,
+        translation: translation.trim() || undefined,
       });
       setMessage('✅ 例句新增成功！');
       setText('');
       setTranslation('');
     } catch (error: any) {
-      setMessage(`❌ 新增失敗: ${error.response?.data?.error || error.message}`);
+      const errorMsg = error.response?.data?.error || error.message;
+      if (error.response?.status === 400) {
+        setMessage(`❌ 輸入格式錯誤: ${errorMsg}`);
+      } else if (error.response?.status === 500) {
+        setMessage('❌ 伺服器錯誤，請稍後再試或聯繫管理員');
+      } else {
+        setMessage(`❌ 新增失敗: ${errorMsg}`);
+      }
+      console.error('CMS add sentence error:', error.response?.data);
     } finally {
       setLoading(false);
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
@@ -233,6 +282,18 @@ export default function CMS() {
               {loading ? '新增中...' : '新增例句'}
             </button>
           </div>
+        </section>
+
+        {/* 使用說明 */}
+        <section className="rounded-xl bg-blue-50 border border-blue-200 p-4 space-y-2">
+          <h3 className="text-sm font-semibold text-blue-900">💡 使用說明</h3>
+          <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+            <li><strong>單字長度限制：</strong>最多 100 個字元</li>
+            <li><strong>例句長度限制：</strong>最多 500 個字元</li>
+            <li><strong>重複檢查：</strong>系統會自動檢查同一語別中是否已存在相同單字</li>
+            <li><strong>自動清理：</strong>輸入的前後空白會被自動移除</li>
+            <li><strong>錯誤提示：</strong>新增失敗時會顯示具體原因，請依提示修正後重試</li>
+          </ul>
         </section>
       </main>
     </MobileLayout>
