@@ -73,18 +73,25 @@ declare global {
 export const prisma =
   global.prisma ??
   new PrismaClient(
-    effectiveUrl ? { datasources: { db: { url: effectiveUrl } } } : undefined
+    effectiveUrl 
+      ? { 
+          datasources: { db: { url: effectiveUrl } },
+          log: process.env.NODE_ENV === 'production' 
+            ? ['error', 'warn']
+            : ['query', 'error', 'warn']
+        } 
+      : undefined
   );
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
-// Diagnostics logging (remove in production if verbose logs are unwanted)
+// Diagnostics logging
 if (typeof window === 'undefined') {
-  // 伺服器端才會執行
   if (!effectiveUrl) {
-    console.warn('[Prisma] ⚠️ DATABASE_URL not resolved - queries may fail');
+    console.error('[Prisma] ❌ DATABASE_URL not resolved - queries will fail');
+    console.error('[Prisma] Check environment variables: DATABASE_URL, SUPABASE_PASSWORD, SUPABASE_REF, SUPABASE_REGION');
   } else {
-    const preview = effectiveUrl.substring(0, 60) + '...';
-    console.log(`[Prisma] ✓ Connected to ${preview}`);
+    const preview = effectiveUrl.replace(/:[^:@]+@/, ':***@').substring(0, 80);
+    console.log(`[Prisma] ✓ URL configured: ${preview}`);
   }
 }

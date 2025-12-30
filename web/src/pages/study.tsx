@@ -25,11 +25,15 @@ export default function Study() {
     setLoading(true);
     api.get('/dashboard/dialects')
       .then(res => {
-        const list: Dialect[] = (res.data.data || []).map((d: any) => ({
-          id: d.dialect_id ?? d.id,
-          code: d.code ?? '',
+        console.log('[Study] API response:', res.data);
+        // 嘗試多種資料格式
+        const rawData = res.data.data || res.data.dialects || [];
+        const list: Dialect[] = rawData.map((d: any) => ({
+          id: d.dialect_id || d.id,
+          code: d.code || '',
           name: d.name,
         }));
+        console.log('[Study] Parsed dialects:', list);
         setDialects(list);
 
         const saved = localStorage.getItem('selectedDialectId');
@@ -46,7 +50,8 @@ export default function Study() {
       })
       .catch(err => {
         console.error('載入方言失敗:', err);
-        setError('無法載入方言列表。請確認資料庫連接正常。');
+        console.error('Error details:', err.response?.data);
+        setError(`無法載入方言列表: ${err.response?.data?.error || err.message}`);
         setLoading(false);
       });
   }, []);

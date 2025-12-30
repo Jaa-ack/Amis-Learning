@@ -20,8 +20,10 @@ export default function Dashboard() {
           api.get('/cards/next', { params: { limit: 5 } }),
         ]);
 
-        const counts = (dialectRes.data.data || []).map((d: any) => ({
-          id: d.dialect_id ?? d.id,
+        console.log('[Dashboard] Dialects response:', dialectRes.data);
+        const rawData = dialectRes.data.data || dialectRes.data.counts || [];
+        const counts = rawData.map((d: any) => ({
+          id: d.dialect_id || d.id,
           name: d.name,
           cards: Number(d.cards || 0),
         }));
@@ -34,8 +36,9 @@ export default function Dashboard() {
           dialect: c.dialect?.name || '',
         }));
         setRecent(items);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Dashboard load error', err);
+        console.error('Error details:', err.response?.data);
       } finally {
         setLoading(false);
       }

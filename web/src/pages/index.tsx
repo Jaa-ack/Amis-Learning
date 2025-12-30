@@ -19,11 +19,14 @@ export default function Home() {
     const loadDialects = async () => {
       try {
         const res = await api.get('/dashboard/dialects');
-        const dialectList: Dialect[] = (res.data.data || []).map((d: any) => ({
-          id: d.dialect_id ?? d.id,
-          code: d.code ?? '',
+        console.log('[Home] API response:', res.data);
+        const rawData = res.data.data || res.data.dialects || [];
+        const dialectList: Dialect[] = rawData.map((d: any) => ({
+          id: d.dialect_id || d.id,
+          code: d.code || '',
           name: d.name,
         }));
+        console.log('[Home] Parsed dialects:', dialectList);
         setDialects(dialectList);
         const saved = localStorage.getItem('selectedDialectId');
         if (saved && dialectList.find((d: Dialect) => d.id === saved)) {
@@ -31,8 +34,9 @@ export default function Home() {
         } else if (dialectList.length > 0) {
           setSelectedDialectId(dialectList[0].id);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load dialects:', error);
+        console.error('Error details:', error.response?.data);
       }
     };
     loadDialects();

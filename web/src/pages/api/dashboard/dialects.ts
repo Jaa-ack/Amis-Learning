@@ -37,11 +37,23 @@ export default async function handler(_req: NextApiRequest, res: NextApiResponse
       cards: Number(row.cards ?? 0),
     }));
 
-    const result = { dialects, counts };
+    // 前端需要的資料格式：data 包含 dialect 物件
+    const result = {
+      data: counts.length > 0 ? counts : dialects.map(d => ({
+        dialect_id: d.id,
+        id: d.id,
+        code: d.code,
+        name: d.name,
+        cards: 0
+      })),
+      dialects,
+      counts
+    };
     
     // 存入快取（10 分鐘，dialect 資料很少變動）
     dialectCache.set(cacheKey, result, 600);
 
+    console.log(`[API] /dashboard/dialects returned ${dialects.length} dialects`);
     res.json(result);
   } catch (error) {
     console.error('Dialects API error:', error);
