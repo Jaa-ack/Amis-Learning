@@ -19,6 +19,8 @@ export default function Study() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [flipped, setFlipped] = useState(false); // 卡片翻面狀態
+  const [isSubmitting, setIsSubmitting] = useState(false); // 批次上傳中
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]); // 本地快取評分
 
   // 載入方言列表和恢復已選擇的語系
   useEffect(() => {
@@ -71,21 +73,53 @@ export default function Study() {
 
   const item = items[current];
 
+  // 批次上傳評分記錄
+  const batchSubmitReviews = async (reviews: any[]) => {
+    if (reviews.length === 0) return { success: true };
+    try {
+      setIsSubmitting(true);
+      const results = await Promise.all(
+        reviews.map(r =>
+          api.post('/reviews', r).catch(e => {
+            console.error(`Failed to submit review for ${r.flashcardId}:`, e);
+            return null;
+          })
+        )
+      );
+      const failed = results.filter(r => !r?.data?.ok || !r);
+      if (failed.length > 0) {
+        throw new Error(`${failed.length}/${reviews.length} 筆評分上傳失敗`);
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error('批次上傳失敗:', err);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const rate = async (proficiency: number) => {
     if (!item) return;
+    if (isSubmitting) return; // 上傳中，禁止點擊
     try {
-      // 提交複習結果（使用 SM-2 演算法）
-      await api.post('/reviews', { 
-        flashcardId: item.id, 
-        mode: 'CHOICE', 
-        score: proficiency
-      });
+      // 先加入待上傳隊列
+      const newReview = { flashcardId: item.id, mode: 'CHOICE', score: proficiency };
+      const newPending = [...pendingReviews, newReview];
+      setPendingReviews(newPending);
 
       const newStudied = studiedCount + 1;
       setStudiedCount(newStudied);
 
-      // 每學習 10 個單字，自動跳轉到測驗
+      // 達到 10 個後，批次上傳並跳轉到測驗
       if (newStudied >= 10) {
+        try {
+          await batchSubmitReviews(newPending);
+          setPendingReviews([]);
+        } catch (uploadErr: any) {
+          alert(`上傳學習記錄失敗：${uploadErr?.message || uploadErr}`);
+          setPendingReviews(newPending); // 保留本地快取以便重試
+        }
         router.push(`/test?dialectId=${selectedDialect}&fromStudy=true`);
         return;
       }
@@ -97,7 +131,6 @@ export default function Study() {
         } else {
           alert(`完成 ${newStudied} 個單字學習！`);
           if (selectedDialect) {
-            // 抓下一批卡片並重置進度
             loadCards(selectedDialect);
           }
           return 0;
@@ -186,7 +219,9 @@ export default function Study() {
                 </button>
               ) : (
                 <div>
-                  <div className="mb-2 text-center text-sm text-text-muted">評估您對這個單字的熟練程度</div>
+                  <div className="mb-2 text-center text-sm text-text-muted">
+                    {isSubmitting ? '⏳ 儲存中...' : '評估您對這個單字的熟練程度'}
+                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {[
                       { score: 1, label: 'Again', cls: 'bg-primary' },
@@ -200,7 +235,8 @@ export default function Study() {
                           setFlipped(false);
                           rate(score);
                         }}
-                        className={`py-3 rounded-lg text-white flex flex-col items-center gap-1 active:animate-press ${cls}`}
+                        disabled={isSubmitting}
+                        className={`py-3 rounded-lg text-white flex flex-col items-center gap-1 active:animate-press disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
                       >
                         <div className="text-base font-bold">{score}</div>
                         <div className="text-[11px]">{label}</div>
