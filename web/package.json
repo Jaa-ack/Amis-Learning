@@ -9,6 +9,7 @@
     "postinstall": "npm run prisma:generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
+    "seed": "tsx scripts/seed.ts",
     "import": "tsx scripts/clean-import.ts"
   },
   "dependencies": {
