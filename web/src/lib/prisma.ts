@@ -16,15 +16,18 @@ function buildPoolingUrlFromDirect(url: string): string | null {
     const username = u.username || 'postgres';
     const password = u.password;
     if (!password) return null;
-    const region = process.env.SUPABASE_REGION || 'ap-northeast-1';
+    const region = process.env.SUPABASE_REGION || 'ap-south-1';
     const poolingHost = `aws-0-${region}.pooler.supabase.com`;
     const dbName = u.pathname.replace(/^\//, '') || 'postgres';
     const params = u.searchParams;
     params.set('pgbouncer', 'true');
     params.set('connection_limit', '1');
+    params.set('sslmode', 'require');
     const search = params.toString();
     const pooledUser = username.includes('.') ? username : `${username}.${ref}`;
-    return `postgresql://${pooledUser}:${password}@${poolingHost}:6543/${dbName}?${search}`;
+    // 使用 encodeURIComponent 確保密碼中的特殊字符被正確編碼
+    const encodedPassword = encodeURIComponent(password);
+    return `postgresql://${pooledUser}:${encodedPassword}@${poolingHost}:6543/${dbName}?${search}`;
   } catch {
     return null;
   }
@@ -43,7 +46,9 @@ function getServerlessFallbackUrl(): string | null {
   if (!password) return null;
   
   const pooledUser = `postgres.${ref}`;
-  return `postgresql://${pooledUser}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require`;
+  // 確保密碼中的特殊字符被正確編碼
+  const encodedPassword = encodeURIComponent(password);
+  return `postgresql://${pooledUser}:${encodedPassword}@aws-0-${region}.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require`;
 }
 
 let effectiveUrl = process.env.DATABASE_URL;
@@ -91,7 +96,13 @@ if (typeof window === 'undefined') {
     console.error('[Prisma] ❌ DATABASE_URL not resolved - queries will fail');
     console.error('[Prisma] Check environment variables: DATABASE_URL, SUPABASE_PASSWORD, SUPABASE_REF, SUPABASE_REGION');
   } else {
-    const preview = effectiveUrl.replace(/:[^:@]+@/, ':***@').substring(0, 80);
-    console.log(`[Prisma] ✓ URL configured: ${preview}`);
+    // 隱藏密碼並顯示連線訊息
+    const urlObj = new URL(effectiveUrl);
+    const preview = `${urlObj.protocol}//${urlObj.username}:***@${urlObj.hostname}:${urlObj.port}${urlObj.pathname}`;
+    console.log(`[Prisma] ✓ Connection URL configured`);
+    console.log(`[Prisma] - User: ${urlObj.username}`);
+    console.log(`[Prisma] - Host: ${urlObj.hostname}:${urlObj.port}`);
+    console.log(`[Prisma] - Database: ${urlObj.pathname}`);
+    console.log(`[Prisma] - SSL Mode: ${urlObj.searchParams.get('sslmode')}`);
   }
 }
