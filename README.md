@@ -5,8 +5,8 @@
 基於 **SM-2 間隔重複演算法**的智能阿美語學習系統，針對行動端體驗優化。
 
 🔗 **GitHub**: https://github.com/Jaa-ack/Amis-Learning  
-📊 **資料庫**: Supabase (3,131 筆詞彙 × 5 方言)  
-🌐 **部署**: https://web-one-eta-27.vercel.app ✅
+📊 **資料庫**: Neon (PostgreSQL，3,130 筆詞彙 × 5 方言)  
+🌐 **部署**: https://amis-learning.vercel.app (生產環境待配置)
 
 ---
 
@@ -22,19 +22,32 @@
 | **4. 資料庫遷移** | Docker → Supabase (PostgreSQL) | ✅ |
 | **5. 資料匯入** | 3,131 筆詞彙 + 5 個方言 | ✅ |
 
-### 🚀 第 6 階段：部署至 Vercel（待完成）⭐
+### 🚀 第 6 階段：部署至 Vercel（待環境變數配置）⭐
+
+**前置條件**：已從 Supabase 完成資料遷移至 Neon（2024 年底完成）
 
 ```bash
-# 1️⃣ 登入 Vercel
-cd /Users/jaaaaack/VSCode/Amis-Learning/web
-npx vercel login
+# 1️⃣ 設定 Vercel 環境變數（在 Vercel 儀表板中）
+# Production & Preview 環境均設定以下：
+DATABASE_URL="postgresql://neondb_owner:npg_XXXXXXXXXXXX@ep-polished-darkness-a1ivnj13-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://neondb_owner:npg_XXXXXXXXXXXX@ep-polished-darkness-a1ivnj13.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
-# 2️⃣ 部署到生產環境
-npx vercel --prod -e DATABASE_URL='postgresql://postgres:Jason92123!abc@db.komwtkwhfvhuswfwvnwu.supabase.co:6543/postgres?sslmode=require'
+# 2️⃣ 推送至 GitHub（自動觸發 Vercel 重新部署）
+git push origin main
 
-# 3️⃣ 完成！訪問 Vercel 提供的 URL
-# https://amis-learning.vercel.app
+# 3️⃣ 驗證部署成功
+curl https://amis-learning.vercel.app/api/debug/db-test
+# 預期回應：{ "status": "HEALTHY", "tables": 5 }
+
+# 4️⃣ 測試學習功能
+# 訪問 https://amis-learning.vercel.app
+# 選擇方言 → 開始學習 → 點擊評分按鈕 → 查看進度同步
 ```
+
+**技術細節**：
+- `DATABASE_URL`: Neon Pooler URL（適合 Vercel 無伺服器環境）
+- `DIRECT_URL`: Neon Direct URL（用於 Prisma 遷移）
+- 支援連接池 (`pgbouncer=true`)，減少連接開銷
 
 ---
 
@@ -87,7 +100,7 @@ npx vercel --prod -e DATABASE_URL='postgresql://postgres:Jason92123!abc@db.komwt
 ```
 前端層      Next.js 14 + React 18 + TypeScript
 API 層      Next.js API Routes (Serverless)
-資料庫      PostgreSQL (Supabase)
+資料庫      PostgreSQL (Neon - 免費伺服器)
 ORM         Prisma
 部署        Vercel
 ```
@@ -137,95 +150,106 @@ Amis-Learning/
 ### 前置需求
 - Node.js 18+
 - npm 9+
-- Supabase 帳戶
+- Git
+- 可選：Neon 帳戶（開發環境已配置）
 
 ### 本地開發
 
 ```bash
 # 1. 複製環境設定
 cd web
-cp .env.example .env
+cp .env.example .env.local
 
-# 2. 編輯 .env，填入 DATABASE_URL
-# DATABASE_URL=postgresql://postgres:密碼@...supabase.co:5432/postgres?sslmode=require
+# 2. 編輯 .env.local，填入 DATABASE_URL（Neon 連接字串）
+# DATABASE_URL="postgresql://neondb_owner:npg_XXXX@ep-polished-darkness-a1ivnj13-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true"
 
 # 3. 安裝依賴
 npm install
 
-# 4. 初始化資料庫
-npx prisma generate
-npx prisma db push
+# 4. 測試資料庫連接
+npm run check-counts
 
-# 5. 匯入詞彙資料（首次）
-npm run import
-
-# 6. 啟動開發伺服器
+# 5. 啟動開發伺服器
 npm run dev
 ```
 
-開啟 http://localhost:3000
+開啟 http://localhost:3000 → 選擇方言 → 開始學習
 
 ### 可用命令
 
 ```bash
 npm run dev              # 開發伺服器
-npm run build            # 生產構建
+npm run build            # 生產構建  
 npm run start            # 啟動生產伺服器
-npm run import           # 重新匯入資料
+npm run import           # 重新匯入 CSV 資料
+npm run check-counts     # 檢查資料庫記錄數
+npm run seed             # 初始化示範資料
 ```
 
 ---
 
 ## 🔐 環境變數設定
 
-### Supabase 連接字串取得
+### Neon 連接字串取得
 
-1. 前往 [Supabase Dashboard](https://app.supabase.com/)
-2. 選擇專案 → **Settings** → **Database**
-3. 複製 **Connection string** (選擇 **Connection Pooling** 模式用於 Vercel)
-4. **Port 6543** (Pooling) 適合 Serverless，**Port 5432** (Direct) 適合開發
+1. 前往 [Neon Console](https://console.neon.tech/)
+2. 選擇專案 → **Connection String**
+3. 選擇 **Pooler** 版本（適合 Vercel 無伺服器環境）
+4. 複製完整連接字串，包含密碼
 
-### 本地開發 (.env)
+### 本地開發 (.env.local)
 ```env
-DATABASE_URL=postgresql://postgres:密碼@db.xxx.supabase.co:5432/postgres?sslmode=require
-NEXT_PUBLIC_API_BASE=http://localhost:3000
+DATABASE_URL="postgresql://neondb_owner:npg_XXXX@ep-polished-darkness-a1ivnj13-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=1"
+NEXT_PUBLIC_API_BASE="http://localhost:3000"
 ```
 
-### Vercel 生產 (Vercel Dashboard)
+### Vercel 生產環境
+在 [Vercel Dashboard](https://vercel.com) 中設定環境變數（Project Settings → Environment Variables）：
 ```
-DATABASE_URL=postgresql://postgres:密碼@db.xxx.supabase.co:6543/postgres?sslmode=require
-NEXT_PUBLIC_API_BASE=https://amis-learning.vercel.app
+DATABASE_URL = postgresql://neondb_owner:npg_XXXX@ep-polished-darkness-a1ivnj13-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=1
+DIRECT_URL = postgresql://neondb_owner:npg_XXXX@ep-polished-darkness-a1ivnj13.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 ```
+
+> **提示**：
+> - `DATABASE_URL`（Pooler）：用於 API 路由查詢
+> - `DIRECT_URL`（Direct）：用於 Prisma 遷移腳本
+> - 連接池 (`pgbouncer=true`) 減少無伺服器環境的連接開銷
 
 ---
 
 ## 🌐 部署到 Vercel
 
-### 方法 A：使用 Vercel CLI（推薦）
+### 快速部署
+
+1. 在 Vercel Dashboard 設定環境變數（如上節）
+2. 推送至 GitHub：
+```bash
+git add .
+git commit -m "chore: update env config"
+git push origin main
+```
+3. Vercel 自動重新部署
+4. 訪問 https://amis-learning.vercel.app
+
+### 驗證部署成功
 
 ```bash
-# 1️⃣ 登入
-cd web
-npx vercel login
+# 檢查資料庫連接
+curl https://amis-learning.vercel.app/api/debug/db-test
+# 預期回應：{ "status": "HEALTHY", "tables": 5 }
 
-# 2️⃣ 部署（自動設定）
-npx vercel --prod -e DATABASE_URL='postgresql://postgres:密碼@db.xxx.supabase.co:6543/postgres?sslmode=require'
+# 檢查環境變數
+curl https://amis-learning.vercel.app/api/debug/env
+# 應顯示 DATABASE_URL 已設置（密碼隱藏）
 
-# 3️⃣ 查看部署狀態
-npx vercel status
-npx vercel logs --follow
+# 測試學習功能
+# 打開 https://amis-learning.vercel.app
+# 1. 選擇方言（如 "阿美語"）
+# 2. 開始學習 10 個單字
+# 3. 點擊評分按鈕（應顯示 "⏳ 儲存中..."）
+# 4. 完成後進入測驗頁面
+# 5. 進度應已同步至 Neon 資料庫
 ```
-
-### 方法 B：使用 Vercel Web 介面
-
-1. 前往 https://vercel.com/new
-2. **Import Git Repository** → 選擇 `Amis-Learning`
-3. **Framework**: Next.js（自動選擇）
-4. **Root Directory**: `web`
-5. **Environment Variables**:
-   - Key: `DATABASE_URL`
-   - Value: Supabase 連接字串（Port 6543）
-6. 點擊 **Deploy**
 
 ### 方法 C：GitHub 自動部署
 
@@ -264,46 +288,44 @@ curl 'https://amis-learning.vercel.app/api/cards/next?dialectId=xiuguluan&userId
 
 ## 🔧 資料庫設定（最終版）
 
-### 首次部署：建立索引（建議用最終版）
+### 首次部署：建立索引
 
-請在 Supabase **SQL Editor** 直接執行：
+Neon 資料庫已自動建立所有必要的索引與擴展。若手動執行，可使用：
 
-- 最終索引腳本：`db/final-indexes.sql`
-- 說明文件：`PERFORMANCE.md`
+- 最終索引腳本：[db/final-indexes.sql](db/final-indexes.sql)
+- 性能文檔：[PERFORMANCE.md](PERFORMANCE.md)
 
-此最終版已整合模糊搜尋、複習排程、POST_TEST 查詢加速、外鍵索引與統計更新，並修正欄位大小寫（例如 `"createdAt"`）。
+此腳本包含模糊搜尋、複習排程、查詢加速與外鍵索引。
 
 ---
 
 ## 🐛 常見問題解答
 
-### Q: 連接 Supabase 失敗 (P1001)?
+### Q: 連接 Neon 失敗?
 **A:** 
-- 確認 `DATABASE_URL` 格式正確
-- Port **6543** (Pooling) 用於 Vercel，**5432** (Direct) 用於開發
-- 末尾加入 `?sslmode=require`
-- 檢查密碼是否包含特殊字符（需 URL encode）
+- 確認 `DATABASE_URL` 包含 Pooler URL
+- 確認密碼中的特殊字符已正確編碼
+- 檢查是否加上 `?sslmode=require`
+- 驗證：`curl https://amis-learning.vercel.app/api/debug/db-test`
 
 ### Q: Vercel 部署失敗?
-**A:** 查看部署日誌：
-```bash
-npx vercel logs --follow
-```
-常見原因：
-- 環境變數未設定
-- Node.js 版本不兼容
-- 依賴安裝失敗
+**A:** 
+- 在 Vercel Dashboard 檢查環境變數是否已設定
+- 確認 `DATABASE_URL` 和 `DIRECT_URL` 都已設置
+- 查看部署日誌找出錯誤信息
 
-### Q: 資料匯入失敗?
+### Q: 學習進度未儲存?
 **A:**
-- 確認 DATABASE_URL 正確
-- 檢查 CSV 編碼為 UTF-8
-- 執行：`npx prisma generate` 後再匯入
+- 檢查網路連接是否正常
+- 等待 "⏳ 儲存中..." 提示消失後再關閉頁面
+- 打開瀏覽器開發工具（F12）檢查 `/api/reviews` 是否有 405 或其他錯誤
+- 若多次失敗，進度會保留在本地快取中
 
 ### Q: 模糊搜尋無結果?
 **A:**
-- 確認已執行 `CREATE EXTENSION pg_trgm`
-- 確認已建立 Trigram 索引
+- 確認已執行 `CREATE EXTENSION IF NOT EXISTS pg_trgm` 
+- 確認詞彙表（flashcards）有足夠資料
+- 試著搜尋完整單字而非片段
 - 檢查詞彙確實存在於資料庫
 
 ---
@@ -326,7 +348,7 @@ npx vercel logs --follow
 - [ ] 部署驗證與監控
 
 ### 優先級 🟡 - 本月完成
-- [ ] 用戶認證系統（Supabase Auth / GitHub OAuth）
+- [ ] 用戶認證系統（GitHub OAuth）
 - [ ] 登入/註冊頁面
 - [ ] 用戶會話管理
 - [ ] 完整前端 UI 測試
@@ -344,7 +366,7 @@ npx vercel logs --follow
 
 - [Vercel 文檔](https://vercel.com/docs)
 - [Next.js 官方指南](https://nextjs.org/docs)
-- [Supabase 文檔](https://supabase.com/docs)
+- [Neon 文檔](https://neon.tech/docs)
 - [Prisma 文檔](https://www.prisma.io/docs/)
 - [PostgreSQL 模糊搜尋](https://www.postgresql.org/docs/current/pgtrgm.html)
 
