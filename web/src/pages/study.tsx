@@ -90,14 +90,17 @@ export default function Study() {
         return;
       }
 
-      // 移動到下一張卡片
+      // 移動到下一張卡片；若本輪結束則自動抓下一批
       setCurrent(prev => {
         if (prev < items.length - 1) {
           return prev + 1;
         } else {
-          // 本輪學習完成
           alert(`完成 ${newStudied} 個單字學習！`);
-          return prev;
+          if (selectedDialect) {
+            // 抓下一批卡片並重置進度
+            loadCards(selectedDialect);
+          }
+          return 0;
         }
       });
     } catch (err: any) {
