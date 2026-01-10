@@ -1,53 +1,53 @@
 # 阿美語智慧學習平台 (Amis Language Learning Platform)
 
-![Badge](https://img.shields.io/badge/Status-就緒部署-brightgreen) ![Node](https://img.shields.io/badge/Node-18+-blue) ![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![Badge](https://img.shields.io/badge/Status-已部署-brightgreen) ![Node](https://img.shields.io/badge/Node-18+-blue) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![PWA](https://img.shields.io/badge/PWA-Ready-9c40ff)
 
-基於 **SM-2 間隔重複演算法**的智能阿美語學習系統，針對行動端體驗優化。
+基於 **SM-2 間隔重複演算法**的智能阿美語學習系統,針對行動端體驗優化,支援 **PWA 離線使用**。
 
 🔗 **GitHub**: https://github.com/Jaa-ack/Amis-Learning  
-📊 **資料庫**: Neon (PostgreSQL，3,130 筆詞彙 × 5 方言)  
-🌐 **部署**: https://amis-learning.vercel.app (生產環境待配置)
+📊 **資料庫**: Neon (PostgreSQL,3,130 筆詞彙 × 5 方言)  
+🌐 **線上使用**: https://amis-learning.vercel.app  
+📱 **PWA 安裝**: 支援 iOS/Android 加入主畫面
 
 ---
 
 ## ✅ 專案完成狀態
 
-### 📦 第 1-5 階段：已完成 ✅
+### 📦 第 1-7 階段:已完成 ✅
 
 | 階段 | 工作內容 | 狀態 |
 |------|--------|------|
 | **1. 架構與設計** | 技術棧、Prisma Schema、演算法設計 | ✅ |
-| **2. 後端實現** | 8 個 API routes（Next.js Serverless） | ✅ |
+| **2. 後端實現** | 8 個 API routes(Next.js Serverless) | ✅ |
 | **3. 前端實現** | 5 個主頁面 + 3 個 UI 元件 | ✅ |
-| **4. 資料庫遷移** | Docker → Supabase (PostgreSQL) | ✅ |
+| **4. 資料庫遷移** | Docker → Supabase → Neon (PostgreSQL) | ✅ |
 | **5. 資料匯入** | 3,131 筆詞彙 + 5 個方言 | ✅ |
+| **6. PWA 實現** | Progressive Web App 支援 | ✅ |
+| **7. Vercel 部署** | 生產環境部署與自動化 | ✅ |
 
-### 🚀 第 6 階段：部署至 Vercel（待環境變數配置）⭐
+### � PWA 功能(全新!)
 
-**前置條件**：已從 Supabase 完成資料遷移至 Neon（2024 年底完成）
+**Progressive Web App 特性**:
+- ✅ 可安裝到手機主畫面(iOS Safari / Android Chrome)
+- ✅ 全螢幕執行,無瀏覽器工具列
+- ✅ 離線支援(Service Worker)
+- ✅ 最佳化的行動端體驗
+- ✅ 自動快取靜態資源
 
-```bash
-# 1️⃣ 設定 Vercel 環境變數（在 Vercel 儀表板中）
-# Production & Preview 環境均設定以下：
-DATABASE_URL="postgresql://neondb_owner:npg_XXXXXXXXXXXX@ep-polished-darkness-a1ivnj13-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=1"
-DIRECT_URL="postgresql://neondb_owner:npg_XXXXXXXXXXXX@ep-polished-darkness-a1ivnj13.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+**安裝步驟**:
 
-# 2️⃣ 推送至 GitHub（自動觸發 Vercel 重新部署）
-git push origin main
+**iPhone / iPad (Safari)**:
+1. 開啟 https://amis-learning.vercel.app
+2. 點擊底部「分享」按鈕 📤
+3. 向下滾動,選擇「加入主畫面」
+4. 確認安裝,圖示會出現在主畫面
+5. 點擊圖示,像原生 App 一樣使用!
 
-# 3️⃣ 驗證部署成功
-curl https://amis-learning.vercel.app/api/debug/db-test
-# 預期回應：{ "status": "HEALTHY", "tables": 5 }
-
-# 4️⃣ 測試學習功能
-# 訪問 https://amis-learning.vercel.app
-# 選擇方言 → 開始學習 → 點擊評分按鈕 → 查看進度同步
-```
-
-**技術細節**：
-- `DATABASE_URL`: Neon Pooler URL（適合 Vercel 無伺服器環境）
-- `DIRECT_URL`: Neon Direct URL（用於 Prisma 遷移）
-- 支援連接池 (`pgbouncer=true`)，減少連接開銷
+**Android (Chrome)**:
+1. 開啟網站
+2. 點擊瀏覽器選單(⋮)
+3. 選擇「安裝應用程式」或「加到主畫面」
+4. 確認安裝
 
 ---
 
@@ -99,10 +99,12 @@ curl https://amis-learning.vercel.app/api/debug/db-test
 
 ```
 前端層      Next.js 14 + React 18 + TypeScript
+PWA         next-pwa + Service Worker + Web Manifest
 API 層      Next.js API Routes (Serverless)
-資料庫      PostgreSQL (Neon - 免費伺服器)
+資料庫      PostgreSQL (Neon - 雲端伺服器)
 ORM         Prisma
-部署        Vercel
+部署        Vercel (自動化 CI/CD)
+快取        SWR (客戶端資料快取)
 ```
 
 ---
@@ -114,6 +116,7 @@ Amis-Learning/
 ├── web/                          # Next.js 應用
 │   ├── src/
 │   │   ├── pages/               # 頁面 + API routes
+│   │   │   ├── _app.tsx         # PWA meta tags 配置
 │   │   │   ├── study.tsx
 │   │   │   ├── test.tsx
 │   │   │   ├── dictionary.tsx
@@ -131,14 +134,19 @@ Amis-Learning/
 │   │   └── lib/
 │   │       ├── api.ts
 │   │       └── prisma.ts
+│   ├── public/                   # PWA 靜態資源
+│   │   ├── manifest.json         # PWA manifest
+│   │   ├── icon-192x192.png      # App 圖示
+│   │   └── icon-512x512.png
 │   ├── prisma/
 │   │   └── schema.prisma         # 資料庫結構
 │   ├── scripts/
 │   │   └── clean-import.ts       # 資料匯入腳本
+│   ├── next.config.js            # PWA 配置
 │   └── package.json
 ├── docs/                         # 技術文檔
 │   ├── tech-architecture.md
-│   ├── algorithms.md
+│   ├── learning-algorithm.md
 │   └── ui-ux.md
 └── README.md                     # 本文件
 ```
@@ -219,59 +227,73 @@ DIRECT_URL = postgresql://neondb_owner:npg_XXXX@ep-polished-darkness-a1ivnj13.ap
 
 ## 🌐 部署到 Vercel
 
-### 快速部署
+## 🌐 部署到 Vercel
 
-1. 在 Vercel Dashboard 設定環境變數（如上節）
-2. 推送至 GitHub：
+### 已完成部署 ✅
+
+專案已成功部署至 Vercel，並支援 PWA 功能！
+
+**線上網址**: https://amis-learning.vercel.app
+
+### 自動部署流程
+
+每次推送至 GitHub main 分支，Vercel 會自動：
+1. 拉取最新程式碼
+2. 安裝依賴 (`npm install`)
+3. 執行 Prisma 生成 (`prisma generate`)
+4. 建置專案 (`next build`)
+5. 部署到全球 CDN
+6. 生成 Service Worker（PWA）
+
 ```bash
+# 觸發新部署
 git add .
-git commit -m "chore: update env config"
+git commit -m "feat: update features"
 git push origin main
 ```
-3. Vercel 自動重新部署
-4. 訪問 https://amis-learning.vercel.app
 
-### 驗證部署成功
+### PWA 部署驗證
 
-```bash
-# 檢查資料庫連接
-curl https://amis-learning.vercel.app/api/debug/db-test
-# 預期回應：{ "status": "HEALTHY", "tables": 5 }
-
-# 檢查環境變數
-curl https://amis-learning.vercel.app/api/debug/env
-# 應顯示 DATABASE_URL 已設置（密碼隱藏）
-
-# 測試學習功能
-# 打開 https://amis-learning.vercel.app
-# 1. 選擇方言（如 "阿美語"）
-# 2. 開始學習 10 個單字
-# 3. 點擊評分按鈕（應顯示 "⏳ 儲存中..."）
-# 4. 完成後進入測驗頁面
-# 5. 進度應已同步至 Neon 資料庫
-```
-
-### 方法 C：GitHub 自動部署
+部署完成後，驗證 PWA 功能：
 
 ```bash
-# 推送 commit 自動觸發部署
-git add .
-git commit -m "Trigger Vercel deployment"
-git push origin main
+# 檢查 manifest.json
+curl https://amis-learning.vercel.app/manifest.json
+
+# 檢查 Service Worker（生產環境自動生成）
+# 訪問: https://amis-learning.vercel.app/sw.js
+
+# Chrome DevTools 驗證
+# 1. 開啟 https://amis-learning.vercel.app
+# 2. F12 → Application 標籤
+# 3. 左側選單:
+#    - Manifest: 確認名稱和圖示
+#    - Service Workers: 確認已註冊並啟用
+#    - Cache Storage: 確認有快取資源
 ```
 
 ---
 
 ## ✅ 部署驗證清單
 
-部署完成後 (約 2-3 分鐘)，檢查以下項目：
+部署完成後，檢查以下項目：
 
-- [ ] 首頁正常加載：https://amis-learning.vercel.app
-- [ ] 儀表板顯示 5 個方言：/dashboard
-- [ ] 搜尋功能正常：/dictionary
-- [ ] API 連接成功（查看部署日誌無 ERROR）
+### 基本功能
+- [x] 首頁正常加載：https://amis-learning.vercel.app
+- [x] 儀表板顯示 5 個方言：/dashboard
+- [x] 搜尋功能正常：/dictionary
+- [x] 學習功能可用：/study
+- [x] 測驗功能可用：/test
 
-### 測試命令
+### PWA 功能
+- [x] manifest.json 可訪問：/manifest.json
+- [x] Service Worker 自動生成：/sw.js
+- [x] App 圖示正確顯示（192x192, 512x512）
+- [x] iOS Safari 可「加入主畫面」
+- [x] Android Chrome 可安裝應用程式
+- [x] 全螢幕模式運行（standalone）
+
+### API 測試
 
 ```bash
 # 方言清單
@@ -343,9 +365,10 @@ Neon 資料庫已自動建立所有必要的索引與擴展。若手動執行，
 
 ## 🎯 後續改進方向
 
-### 優先級 🔴 - 立即完成
+### 優先級 🔴 - 已完成
 - [x] Vercel 部署
-- [ ] 部署驗證與監控
+- [x] PWA 功能實現
+- [x] App 圖示設計
 
 ### 優先級 🟡 - 本月完成
 - [ ] 用戶認證系統（GitHub OAuth）
@@ -357,7 +380,7 @@ Neon 資料庫已自動建立所有必要的索引與擴展。若手動執行，
 - [ ] Smart Linker 自動詞彙關聯優化
 - [ ] 完整測試套件（單元 + 集成）
 - [ ] 分析儀表板與進度追蹤
-- [ ] 移動應用版本
+- [ ] PWA 離線模式增強
 - [ ] 多語言支援
 
 ---
@@ -378,5 +401,5 @@ MIT License - 詳見 LICENSE 文件
 
 ---
 
-**最後更新**: 2025年12月28日  
-**專案狀態**: ✅ 就緒部署
+**最後更新**: 2026年1月10日  
+**專案狀態**: ✅ 已部署上線 + PWA 支援
