@@ -357,5 +357,12 @@ function similarityPercent(a: string, b: string) {
 }
 
 function normalize(s: string) {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    // 將各種引號符號統一轉換為半形單引號 '
+    .replace(/[''‛‚`´]/g, "'")
+    // 將全形雙引號轉換為半形雙引號
+    .replace(/[""„‟]/g, '"');
 }
