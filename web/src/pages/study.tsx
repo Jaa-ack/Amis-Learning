@@ -146,14 +146,16 @@ export default function Study() {
     <MobileLayout>
       <main className="px-4 py-3">
         {/* Header: daily progress & dialect selector */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="m-0 text-lg font-semibold">學習模式</h2>
-            <div className="text-sm text-text-muted">進度: {studiedCount}/10</div>
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="m-0 text-base sm:text-lg font-semibold">學習模式</h2>
+              <div className="text-sm text-text-muted">進度: {studiedCount}/10</div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <select
-              className="px-3 py-2 rounded-md border border-gray-300 min-w-[180px] bg-surface"
+              className="flex-1 px-3 py-2 rounded-md border border-gray-300 bg-surface text-sm"
               value={selectedDialect || ''}
               onChange={(e) => {
                 const id = e.target.value;
@@ -170,7 +172,7 @@ export default function Study() {
             </select>
             <button
               onClick={() => selectedDialect && loadCards(selectedDialect)}
-              className="px-3 py-2 rounded-md border border-gray-300 bg-surface"
+              className="px-3 py-2 rounded-md border border-gray-300 bg-surface text-sm"
             >
               重新載入
             </button>
@@ -178,7 +180,7 @@ export default function Study() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-md mb-3 bg-red-100 text-red-700">錯誤：{error}</div>
+          <div className="p-3 rounded-md mb-3 bg-red-100 text-red-700 text-sm">錯誤：{error}</div>
         )}
 
         {loading ? (
@@ -191,35 +193,36 @@ export default function Study() {
           <>
             {/* Flashcard */}
             <div
-              className="h-64 rounded-lg bg-surface shadow-surface flex items-center justify-center text-2xl select-none mb-24"
+              className="rounded-lg bg-surface shadow-surface flex items-center justify-center text-xl sm:text-2xl select-none mb-24 p-6"
+              style={{ minHeight: 220, wordBreak: 'break-word', overflow: 'hidden' }}
               onClick={() => setFlipped((v) => !v)}
             >
               <div className={flipped ? 'animate-flip' : ''}>
                 {flipped ? (
                   <div className="text-center px-4">
-                    <div className="text-2xl mb-2">{item.meaning}</div>
+                    <div className="text-lg sm:text-xl mb-2 break-words">{item.meaning}</div>
                     {item.phonetic && (
-                      <div className="text-base opacity-70 italic">/{item.phonetic}/</div>
+                      <div className="text-sm opacity-70 italic">/{item.phonetic}/</div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold">{item.lemma}</div>
+                  <div className="text-2xl sm:text-3xl font-bold break-words">{item.lemma}</div>
                 )}
               </div>
             </div>
 
             {/* Bottom controls in thumb zone (fixed above nav) */}
-            <div className="fixed bottom-16 left-0 right-0 px-4">
+            <div className="fixed bottom-16 left-0 right-0 px-4 pb-4">
               {!flipped ? (
                 <button
-                  className="w-full py-3 rounded-lg bg-primary text-white text-lg active:animate-press"
+                  className="w-full py-3 rounded-lg bg-primary text-white text-base sm:text-lg active:animate-press"
                   onClick={() => setFlipped(true)}
                 >
                   顯示答案
                 </button>
               ) : (
                 <div>
-                  <div className="mb-2 text-center text-sm text-text-muted">
+                  <div className="mb-2 text-center text-xs sm:text-sm text-text-muted">
                     {isSubmitting ? '⏳ 儲存中...' : '評估您對這個單字的熟練程度'}
                   </div>
                   <div className="grid grid-cols-4 gap-2">

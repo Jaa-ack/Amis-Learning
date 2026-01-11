@@ -49,18 +49,18 @@ export default function Home() {
 
   return (
     <MobileLayout>
-      <main className="px-4 py-5 space-y-5">
+      <main className="px-3 py-4 sm:px-4 sm:py-5 space-y-5 pb-20">
         <header className="space-y-1">
-          <p className="text-sm text-text-muted">Amis Learning</p>
-          <h1 className="text-2xl font-bold text-text">選擇你的語別，開始學習</h1>
+          <p className="text-xs sm:text-sm text-text-muted">Amis Learning</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-text break-words">選擇你的語別，開始學習</h1>
         </header>
 
-        <section className="rounded-xl bg-surface shadow-surface p-4 space-y-3">
-          <div className="text-sm font-semibold text-text">選擇語別</div>
+        <section className="rounded-xl bg-surface shadow-surface p-3 sm:p-4 space-y-3">
+          <div className="text-xs sm:text-sm font-semibold text-text">選擇語別</div>
           <select
             value={selectedDialectId}
             onChange={(e) => handleDialectChange(e.target.value)}
-            className="w-full max-w-md rounded-lg border border-gray-200 bg-white px-3 py-2 text-base text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm sm:text-base text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
             <option value="">-- 請選擇語別 --</option>
             {dialects.map((d) => (
@@ -70,16 +70,16 @@ export default function Home() {
             ))}
           </select>
           {selectedDialectId && (
-            <div className="text-sm text-text-muted">
+            <div className="text-xs sm:text-sm text-text-muted">
               已選擇：
-              <span className="font-semibold text-text">
+              <span className="font-semibold text-text ml-1">
                 {dialects.find((d) => d.id === selectedDialectId)?.name}
               </span>
             </div>
           )}
         </section>
 
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
             { href: '/study', label: '學習模式' },
             { href: '/test', label: '測驗模式' },
@@ -90,7 +90,7 @@ export default function Home() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-lg bg-surface shadow-surface px-3 py-4 text-center text-sm font-semibold text-text hover:-translate-y-0.5 hover:shadow-lg transition"
+              className="rounded-lg bg-surface shadow-surface px-3 py-4 text-center text-xs sm:text-sm font-semibold text-text hover:-translate-y-0.5 hover:shadow-lg transition break-words"
             >
               {item.label}
             </Link>

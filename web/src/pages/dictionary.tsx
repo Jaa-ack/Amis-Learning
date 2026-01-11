@@ -176,15 +176,15 @@ export default function Dictionary() {
 
   return (
     <MobileLayout>
-      <main className="px-4 py-4 space-y-4">
+      <main className="px-3 py-3 sm:px-4 sm:py-4 space-y-4 pb-20">
         <header className="space-y-1">
-          <p className="text-sm text-text-muted">Amis Learning</p>
-          <h1 className="text-2xl font-bold text-text">阿美語辭典管理</h1>
+          <p className="text-xs sm:text-sm text-text-muted">Amis Learning</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-text break-words">阿美語辭典管理</h1>
         </header>
 
         {message && (
           <div
-            className={`rounded-lg border px-4 py-3 text-sm ${
+            className={`rounded-lg border px-4 py-3 text-xs sm:text-sm ${
               message.startsWith('✅')
                 ? 'bg-green-50 border-green-200 text-green-800'
                 : 'bg-red-50 border-red-200 text-red-800'
@@ -194,10 +194,10 @@ export default function Dictionary() {
           </div>
         )}
 
-        <section className="rounded-xl bg-surface shadow-surface p-4 space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-semibold text-text">選擇語別</label>
+        <section className="rounded-xl bg-surface shadow-surface p-3 sm:p-4 space-y-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="text-xs sm:text-sm font-semibold text-text whitespace-nowrap">選擇語別</label>
               <select
                 value={selectedDialect}
                 onChange={(e) => {
@@ -205,7 +205,7 @@ export default function Dictionary() {
                   setSelectedDialect(value);
                   if (value !== 'all') localStorage.setItem('selectedDialectId', value);
                 }}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="flex-1 min-w-[150px] rounded-lg border border-gray-200 bg-white px-2 py-2 text-xs sm:text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 <option value="all">全部語別</option>
                 {dialects.map((d) => (
@@ -216,12 +216,14 @@ export default function Dictionary() {
               </select>
             </div>
 
-            <div className="w-full md:w-72">
+            <div className="w-full">
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜尋單字或中文意思..."
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                autoComplete="off"
+                spellCheck="false"
               />
             </div>
           </div>
@@ -229,12 +231,12 @@ export default function Dictionary() {
 
         <section className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl bg-surface shadow-surface border border-gray-100">
-            <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-text">單字列表</div>
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="border-b border-gray-100 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-text">單字列表</div>
+            <div className="max-h-[50vh] sm:max-h-[70vh] overflow-y-auto">
               {loading ? (
-                <div className="py-6 text-center text-text-muted">載入中...</div>
+                <div className="py-6 text-center text-text-muted text-sm">載入中...</div>
               ) : filteredItems.length === 0 ? (
-                <div className="py-6 text-center text-text-muted">
+                <div className="py-6 text-center text-text-muted text-xs sm:text-sm">
                   {searchQuery ? '沒有找到符合的單字' : '沒有單字資料'}
                 </div>
               ) : (
@@ -243,12 +245,12 @@ export default function Dictionary() {
                     <li
                       key={item.id}
                       onClick={() => handleCardClick(item)}
-                      className={`cursor-pointer px-4 py-3 hover:bg-gray-50 transition ${
+                      className={`cursor-pointer px-3 sm:px-4 py-3 hover:bg-gray-50 transition ${
                         selectedCard?.id === item.id ? 'bg-primary/5' : ''
                       }`}
                     >
-                      <div className="text-base font-semibold text-primary">{item.lemma}</div>
-                      <div className="text-sm text-text-muted">{item.meaning || '（無中文意思）'}</div>
+                      <div className="text-sm sm:text-base font-semibold text-primary break-words">{item.lemma}</div>
+                      <div className="text-xs sm:text-sm text-text-muted break-words">{item.meaning || '（無中文意思）'}</div>
                       <div className="text-xs text-text-muted mt-1">
                         {item.dialect_name || getDialectName(item.dialect_id)}
                         {item.phonetic && ` • ${item.phonetic}`}
@@ -258,37 +260,37 @@ export default function Dictionary() {
                 </ul>
               )}
             </div>
-            <div className="border-t border-gray-100 px-4 py-2 text-center text-xs text-text-muted">
+            <div className="border-t border-gray-100 px-3 sm:px-4 py-2 text-center text-xs text-text-muted">
               共 {filteredItems.length} 個單字
             </div>
           </div>
 
-          <div className="rounded-xl bg-surface shadow-surface border border-gray-100 p-4 space-y-3 min-h-[400px]">
+          <div className="rounded-xl bg-surface shadow-surface border border-gray-100 p-3 sm:p-4 space-y-3 min-h-[400px]">
             {selectedCard ? (
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-y-auto max-h-[60vh]">
                 <div>
-                  <h3 className="text-xl font-bold text-text">{selectedCard.lemma}</h3>
-                  <p className="text-sm text-text-muted">{selectedCard.dialect_name || getDialectName(selectedCard.dialect_id)}</p>
+                  <h3 className="text-base sm:text-xl font-bold text-text break-words">{selectedCard.lemma}</h3>
+                  <p className="text-xs sm:text-sm text-text-muted">{selectedCard.dialect_name || getDialectName(selectedCard.dialect_id)}</p>
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-text">中文意思</div>
-                  <div className="text-sm text-text mt-1">{selectedCard.meaning || '（無中文意思）'}</div>
+                  <div className="text-xs sm:text-sm font-semibold text-text">中文意思</div>
+                  <div className="text-xs sm:text-sm text-text mt-1 break-words">{selectedCard.meaning || '（無中文意思）'}</div>
                 </div>
 
                 {selectedCard.phonetic && (
                   <div>
-                    <div className="text-sm font-semibold text-text">發音</div>
-                    <div className="text-sm text-text mt-1">{selectedCard.phonetic}</div>
+                    <div className="text-xs sm:text-sm font-semibold text-text">發音</div>
+                    <div className="text-xs sm:text-sm text-text mt-1">{selectedCard.phonetic}</div>
                   </div>
                 )}
 
                 {selectedCard.tags && selectedCard.tags.length > 0 && (
                   <div className="space-y-1">
-                    <div className="text-sm font-semibold text-text">標籤</div>
+                    <div className="text-xs sm:text-sm font-semibold text-text">標籤</div>
                     <div className="flex flex-wrap gap-2">
                       {selectedCard.tags.map((tag, idx) => (
-                        <span key={idx} className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                        <span key={idx} className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary break-words">
                           {tag}
                         </span>
                       ))}
@@ -297,15 +299,15 @@ export default function Dictionary() {
                 )}
 
                 <div className="pt-2 border-t border-gray-100 space-y-2">
-                  <div className="text-sm font-semibold text-text">包含此單字的例句</div>
+                  <div className="text-xs sm:text-sm font-semibold text-text">包含此單字的例句</div>
                   {sentences.length === 0 ? (
-                    <div className="text-sm text-text-muted">（無例句）</div>
+                    <div className="text-xs sm:text-sm text-text-muted">（無例句）</div>
                   ) : (
-                    <ul className="space-y-2 text-sm text-text">
+                    <ul className="space-y-2 text-xs sm:text-sm text-text max-h-[200px] overflow-y-auto">
                       {sentences.map((sentence) => (
-                        <li key={sentence.id} className="rounded-md bg-background px-3 py-2">
+                        <li key={sentence.id} className="rounded-md bg-background px-3 py-2 break-words">
                           <div className="font-semibold">{sentence.text}</div>
-                          {sentence.translation && <div className="text-text-muted text-xs mt-1">{sentence.translation}</div>}
+                          {sentence.translation && <div className="text-text-muted text-[11px] mt-1">{sentence.translation}</div>}
                         </li>
                       ))}
                     </ul>
@@ -313,14 +315,14 @@ export default function Dictionary() {
                 </div>
 
                 <div className="pt-2 border-t border-gray-100 space-y-2">
-                  <div className="text-sm font-semibold text-text">調整 / 刪除</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="text-xs sm:text-sm font-semibold text-text">調整 / 刪除</div>
+                  <div className="space-y-2">
                     <div className="space-y-1">
                       <label className="text-xs text-text-muted">語別</label>
                       <select
                         value={editDialectId}
                         onChange={(e) => setEditDialectId(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
                       >
                         <option value="">未分類</option>
                         {dialects.map((d) => (
@@ -335,7 +337,9 @@ export default function Dictionary() {
                       <input
                         value={editLemma}
                         onChange={(e) => setEditLemma(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        autoComplete="off"
+                        spellCheck="false"
                       />
                     </div>
                     <div className="space-y-1">
@@ -343,7 +347,7 @@ export default function Dictionary() {
                       <input
                         value={editMeaning}
                         onChange={(e) => setEditMeaning(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                     </div>
                     <div className="space-y-1">
@@ -351,16 +355,16 @@ export default function Dictionary() {
                       <input
                         value={editTags}
                         onChange={(e) => setEditTags(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs sm:text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 pt-2">
                     <button
                       onClick={handleUpdate}
                       disabled={saving}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition active:animate-press ${
+                      className={`rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-white transition active:animate-press ${
                         saving ? 'bg-primary/60 cursor-not-allowed' : 'bg-primary hover:-translate-y-0.5'
                       }`}
                     >
@@ -369,7 +373,7 @@ export default function Dictionary() {
                     <button
                       onClick={handleDelete}
                       disabled={saving}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition active:animate-press ${
+                      className={`rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-white transition active:animate-press ${
                         saving ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:-translate-y-0.5'
                       }`}
                     >
@@ -379,7 +383,7 @@ export default function Dictionary() {
                 </div>
               </div>
             ) : (
-              <div className="h-full grid place-content-center text-text-muted text-sm">請從左側列表選擇一個單字</div>
+              <div className="h-full grid place-content-center text-text-muted text-xs sm:text-sm">請從左側列表選擇一個單字</div>
             )}
           </div>
         </section>

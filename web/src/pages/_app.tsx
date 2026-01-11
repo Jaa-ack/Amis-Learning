@@ -1,8 +1,48 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
+import { useEffect } from 'react';
 import './globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    // 全域鍵盤快捷鍵處理
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 按 Alt + ' 輸入 '
+      if (e.altKey && e.key === "'") {
+        e.preventDefault();
+        const target = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          const start = target.selectionStart || 0;
+          const end = target.selectionEnd || 0;
+          const newValue = target.value.substring(0, start) + "'" + target.value.substring(end);
+          target.value = newValue;
+          target.selectionStart = target.selectionEnd = start + 1;
+          // 觸發 onChange 事件
+          target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+      // 按 Alt + 6 輸入 ^
+      if (e.altKey && e.key === '6') {
+        e.preventDefault();
+        const target = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          const start = target.selectionStart || 0;
+          const end = target.selectionEnd || 0;
+          const newValue = target.value.substring(0, start) + '^' + target.value.substring(end);
+          target.value = newValue;
+          target.selectionStart = target.selectionEnd = start + 1;
+          // 觸發 onChange 事件
+          target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, []);
+
   return (
     <>
       <Head>
