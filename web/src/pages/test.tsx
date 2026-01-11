@@ -302,6 +302,7 @@ export default function Test() {
               placeholder="輸入阿美語拼寫..."
               autoFocus
               autoComplete="off"
+              autoCapitalize="off"
               spellCheck="false"
               style={{ 
                 fontSize: 18, 
