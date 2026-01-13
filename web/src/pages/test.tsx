@@ -101,27 +101,34 @@ export default function Test() {
   const gradeAndSubmit = async (answers: TestAnswer[]) => {
     setIsGrading(true);
     try {
-      // 計算結果
+      // 重新計算結果，確保正規化一致
       const resultItems = answers.map(ans => {
         const flashcard = items.find(i => i.id === ans.flashcardId);
+        
+        // 確保使用者輸入和資料庫資料都進行正規化後再比對
+        const normalizedUserInput = normalize(ans.userInput);
+        const normalizedLemma = normalize(flashcard?.lemma || '');
+        const similarity = similarityPercent(normalizedUserInput, normalizedLemma);
+        const isCorrect = normalizedUserInput === normalizedLemma; // 必須 100% 相同才視為正確
+        
         return {
           flashcard,
           userInput: ans.userInput,
-          similarity: ans.similarity,
-          isCorrect: ans.isCorrect
+          similarity,
+          isCorrect
         };
       });
       setResults(resultItems);
 
       // 批次提交到資料庫
-      const reviewSubmissions = answers.map(ans => {
-        const isCorrect = ans.isCorrect;
-        const score = isCorrect ? 4 : ans.similarity >= 85 ? 3 : ans.similarity >= 70 ? 2 : 1;
+      const reviewSubmissions = resultItems.map((item, idx) => {
+        const isCorrect = item.isCorrect;
+        const score = isCorrect ? 4 : item.similarity >= 85 ? 3 : item.similarity >= 70 ? 2 : 1;
         return api.post('/reviews', {
-          flashcardId: ans.flashcardId,
+          flashcardId: item.flashcard.id,
           mode: 'SPELL',
           score,
-          similarity: ans.similarity,
+          similarity: item.similarity,
           isPostTest: true
         });
       });
